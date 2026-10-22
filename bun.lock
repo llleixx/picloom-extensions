@@ -5,7 +5,7 @@
     "": {
       "name": "picloom-extensions",
       "devDependencies": {
-        "@picloom/plugin-sdk": "0.1.0",
+        "@picloom/plugin-sdk": "0.1.1",
         "@types/bun": "1.3.10",
         "sharp": "0.34.5",
         "typescript": "5.9.3",
@@ -15,8 +15,8 @@
       "name": "@picloom-extensions/nodeimage",
       "version": "0.0.0",
       "devDependencies": {
-        "@picloom/plugin-sdk": "0.1.0",
-        "@picloom/plugin-tools": "0.1.0",
+        "@picloom/plugin-sdk": "0.1.1",
+        "@picloom/plugin-tools": "0.1.1",
         "@types/bun": "1.3.10",
         "sharp": "0.34.5",
         "typescript": "5.9.3",
@@ -26,8 +26,8 @@
       "name": "@picloom-extensions/openlist",
       "version": "0.0.0",
       "devDependencies": {
-        "@picloom/plugin-sdk": "0.1.0",
-        "@picloom/plugin-tools": "0.1.0",
+        "@picloom/plugin-sdk": "0.1.1",
+        "@picloom/plugin-tools": "0.1.1",
         "@types/bun": "1.3.10",
         "sharp": "0.34.5",
         "typescript": "5.9.3",
@@ -37,8 +37,8 @@
       "name": "@picloom-extensions/telegram-storage",
       "version": "0.0.0",
       "devDependencies": {
-        "@picloom/plugin-sdk": "0.1.0",
-        "@picloom/plugin-tools": "0.1.0",
+        "@picloom/plugin-sdk": "0.1.1",
+        "@picloom/plugin-tools": "0.1.1",
         "@types/bun": "1.3.10",
         "sharp": "0.34.5",
         "typescript": "5.9.3",
@@ -48,8 +48,8 @@
       "name": "@picloom-extensions/tencent-moderation",
       "version": "0.0.0",
       "devDependencies": {
-        "@picloom/plugin-sdk": "0.1.0",
-        "@picloom/plugin-tools": "0.1.0",
+        "@picloom/plugin-sdk": "0.1.1",
+        "@picloom/plugin-tools": "0.1.1",
         "@types/bun": "1.3.10",
         "sharp": "0.34.5",
         "typescript": "5.9.3",
@@ -59,8 +59,8 @@
       "name": "@picloom-extensions/horizon",
       "version": "0.0.0",
       "devDependencies": {
-        "@picloom/theme-sdk": "0.1.1",
-        "@picloom/theme-tools": "0.1.0",
+        "@picloom/theme-sdk": "0.1.2",
+        "@picloom/theme-tools": "0.1.1",
         "@types/bun": "1.3.10",
         "@vitejs/plugin-vue": "6.0.10",
         "lucide-vue-next": "1.0.0",
@@ -146,13 +146,13 @@
 
     "@picloom-extensions/tencent-moderation": ["@picloom-extensions/tencent-moderation@workspace:plugins/tencent-moderation"],
 
-    "@picloom/plugin-sdk": ["@picloom/plugin-sdk@0.1.0", "", { "peerDependencies": { "sharp": "^0.34.5" }, "optionalPeers": ["sharp"] }, "sha512-fe+Wtdt7GAcHIf/7G1Sl4lWMdzzTmpb5w/mashajgdD5a4uE85TL4T16fXmzzR/rWO9iHwjkl848WS+6tJm1Mg=="],
+    "@picloom/plugin-sdk": ["@picloom/plugin-sdk@0.1.1", "", { "peerDependencies": { "sharp": "^0.34.5" }, "optionalPeers": ["sharp"] }, "sha512-U6q/9N78sQ0DgoBhLgrsIShJsY1/Xrjufp2WfzU28pQDUsC/eWJW9fdpD5IErVYy4HrIKmEPBYOY5Ed+K08L8A=="],
 
-    "@picloom/plugin-tools": ["@picloom/plugin-tools@0.1.0", "", { "bin": { "picloom-plugin": "dist/cli.js" } }, "sha512-ZyFFVLEAPESH21r4iz4jPGfVdAg6lylKK3nTYPfTF0iFtc9EgAG0I1hUA0d5SKzi9CTgJFIk7/q9pZ5ShgZCOw=="],
+    "@picloom/plugin-tools": ["@picloom/plugin-tools@0.1.1", "", { "bin": { "picloom-plugin": "dist/cli.js" } }, "sha512-UzZ7CvI3Kjeaz0De8uQOSjphLhRGkqAs8qsdoz3yxuA1jMvi6s2rYjmab+1Mi2kKcDOLQlQr5pfTTAG/6rjSUg=="],
 
-    "@picloom/theme-sdk": ["@picloom/theme-sdk@0.1.1", "", {}, "sha512-XbbEi1OZqB3W+yCh8lQqE19go1JG6H0174nxEoLimr16rn6flaYo2c5R157svWPsjqtE46nJhL+7nWnQoljl8A=="],
+    "@picloom/theme-sdk": ["@picloom/theme-sdk@0.1.2", "", {}, "sha512-nrlBUrNEBe3CnAg1r/Qvr8bQXgr6ShWN8KP+J6H78cr/iYqazh3u5RnYlAmQZT2pUpYJE/dOT4Kw6CH6cVztgw=="],
 
-    "@picloom/theme-tools": ["@picloom/theme-tools@0.1.0", "", { "peerDependencies": { "vite": "^8.0.0" }, "bin": { "picloom-theme": "dist/cli.js" } }, "sha512-Y3WCujZLS4sFdUeL6IrHTuK2xify+KvBjx3O9gNp+zJ5XVf6uyAvFdJV37YYzbHU7mZ19xDRVsxWCRYkHHOlJA=="],
+    "@picloom/theme-tools": ["@picloom/theme-tools@0.1.1", "", { "peerDependencies": { "vite": "^8.0.0" }, "bin": { "picloom-theme": "dist/cli.js" } }, "sha512-dPUodcvYCpMD07oyOXvIXsADDJ+ZkKiUBqB/vW7ETMsLU82efU9aIujW+C8dm76utgItJoorFa6rj48aoxod9Q=="],
 
     "@rolldown/binding-android-arm-eabi": ["@rolldown/binding-android-arm-eabi@1.2.15", "", { "os": "android", "cpu": "arm" }, "sha512-aLcgK9gIJ3YRvrrtfSBbRa27F5WrpiTaPulnFpsHPxpUHgFlSgnU4854MHwoRGEBhfRJDWCS2WQ7lIjskE9Olw=="],
 

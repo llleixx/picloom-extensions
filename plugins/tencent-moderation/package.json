@@ -8,11 +8,11 @@
     "build": "bun --bun picloom-plugin build"
   },
   "devDependencies": {
-    "@picloom/plugin-sdk": "0.1.0",
+    "@picloom/plugin-sdk": "0.1.1",
     "@types/bun": "1.3.10",
     "sharp": "0.34.5",
     "typescript": "5.9.3",
-    "@picloom/plugin-tools": "0.1.0"
+    "@picloom/plugin-tools": "0.1.1"
   },
   "engines": {
     "bun": ">=1.4.3"
