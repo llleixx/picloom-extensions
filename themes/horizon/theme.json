@@ -119,7 +119,7 @@
         },
         "default": [
           {
-            "url": "assets/cloud-sea.png",
+            "url": "assets/cloud-sea.webp",
             "name": {
               "zh-CN": "云与海的交界",
               "en-US": "Where clouds meet the sea"
@@ -127,7 +127,7 @@
             "tone": "day"
           },
           {
-            "url": "assets/star-lake.png",
+            "url": "assets/star-lake.webp",
             "name": {
               "zh-CN": "一湖星光",
               "en-US": "A lake full of stars"
@@ -135,7 +135,7 @@
             "tone": "night"
           },
           {
-            "url": "assets/dawn-valley.png",
+            "url": "assets/dawn-valley.webp",
             "name": {
               "zh-CN": "晨光山谷",
               "en-US": "Valley of first light"
@@ -143,7 +143,7 @@
             "tone": "day"
           },
           {
-            "url": "assets/aurora-fjord.png",
+            "url": "assets/aurora-fjord.webp",
             "name": {
               "zh-CN": "极光峡湾",
               "en-US": "Under the northern lights"
@@ -305,7 +305,7 @@
       "settings.backgrounds.tone.night": "夜色"
     }
   },
-  "preview": "assets/cloud-sea.png",
+  "preview": "assets/cloud-sea.webp",
   "supportedLocales": [
     "zh-CN",
     "en-US"

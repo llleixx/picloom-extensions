@@ -25,7 +25,9 @@ Backgrounds are bundled locally; no image API is required. The upload panel uses
 
 ## Assets / 素材
 
-All four original illustrations were generated with the built-in **imagegen** tool. They are stored in `public/assets/cloud-sea.png`, `public/assets/star-lake.png`, `public/assets/dawn-valley.png`, and `public/assets/aurora-fjord.png`, and packaged with the theme. No external hotlink is used by default.
+All four original illustrations were generated with the built-in **imagegen** tool. They are packaged as WebP at the original 1672 × 941 resolution, using lossy quality 100, in `public/assets/cloud-sea.webp`, `public/assets/star-lake.webp`, `public/assets/dawn-valley.webp`, and `public/assets/aurora-fjord.webp`. No external hotlink is used by default.
+
+四张插画均由内置 **imagegen** 工具生成，以 WebP 有损质量 100 压缩，保留原始 1672 × 941 分辨率，存放在上述路径并随主题打包，默认不使用外部图片链接。
 
 ### Cloud sea prompt
 
