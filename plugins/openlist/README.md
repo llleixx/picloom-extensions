@@ -1,0 +1,49 @@
+# OpenList Storage
+
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+## Purpose
+
+Use storage mounted in OpenList through its API.
+
+`picloom.openlist` · `storage`
+
+## Configuration
+
+Defaults initialize new drafts only; saving does not fill missing values. Required fields must be present in the submitted configuration. Fields marked “immutable” cannot be changed after creation.
+
+| Field       | Meaning              | Required | Default | Constraints     |
+| ----------- | -------------------- | -------- | ------- | --------------- |
+| `endpoint`  | Endpoint             | Yes      | —       | immutable       |
+| `root`      | Mount directory      | Yes      | —       | immutable       |
+| `token`     | API token            | Yes      | —       | secret          |
+| `redirect`  | Redirect reads (302) | No       | `true`  | —               |
+| `timeoutMs` | Timeout (ms)         | Yes      | `30000` | ≥ 100; ≤ 120000 |
+
+No request parameters.
+
+## Usage example
+
+Set the OpenList service URL, mount directory and API token. Add the source to the upload profile’s storage group, then upload an image and verify the mounted directory and returned link.
+
+```json
+{
+  "redirect": true,
+  "timeoutMs": 30000,
+  "endpoint": "https://openlist.example.com",
+  "root": "/Images",
+  "token": "YOUR_API_TOKEN"
+}
+```
+
+To register existing images, choose **Import** on the storage source page. The scan scope is a directory relative to `root`; leave it empty to scan the whole mount directory. With `root=/Images` and scope `2026`, `/Images/2026/photo.jpg` retains the storage key `2026/photo.jpg`. Setting public-path directory stripping to `1` uses `photo.jpg` for the public path without moving the remote file.
+
+## Behavior and limitations
+
+Object paths combine `root` and the storage key. Writes, reads and deletes depend on the upstream mount. Normal reads redirect to the upstream download URL by default; disabling redirects or requesting a stream proxies the content without forwarding the API token. Write recovery returns unknown because object presence cannot identify the write operation. Endpoint and mount directory are immutable.
+
+A refused connection confirms that the request was not delivered: the write fails, and background tasks may retry under the existing policy. Interrupted transfers, response timeouts and invalid responses can leave the write outcome unknown; writes are not automatically retried in these cases.
+
+Import scans subdirectories through paginated directory listings without downloading images. The token must have directory access; separate directory passwords are not supported. Listings may use OpenList’s cache. Avoid adding, removing or moving entries during a scan. Permission and listing errors fail the scan rather than silently skipping directories. Picloom handles duplicate imports and public-path conflicts.
+
+Build with `bun run build` in this directory; upload the ZIP from `dist/` in Picloom plugin management. Install dependencies with `bun install --frozen-lockfile` at the extensions repository root.

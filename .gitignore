@@ -1,0 +1,10 @@
+node_modules/
+dist/
+outputs/
+.env
+
+# Local preview configuration
+**/dev/config.json
+
+# Local packed tooling dependencies (regenerated with picloom-tooling dev:sync).
+.local-packages/
