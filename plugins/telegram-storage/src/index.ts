@@ -41,7 +41,7 @@ export const telegramStorage: Definition<"storage"> = {
     "en-US": {
       "package.name": "Telegram Storage",
       "package.description":
-        "Store originals as bot documents (20 MB limit). Failed message deletion requires retrying or manually ending replica management.",
+        "Store originals as bot documents (20 MB limit). Failed message deletion requires retrying or manually marking the replica as deleted.",
       "settings.botToken.label": "Bot token",
       "settings.chatId.label": "Chat ID",
       "settings.chatId.description":
@@ -51,7 +51,7 @@ export const telegramStorage: Definition<"storage"> = {
     "zh-CN": {
       "package.name": "Telegram 存储",
       "package.description":
-        "以机器人文档保存原文件（上限 20 MB）。消息删除失败后需重试或人工终结副本。",
+        "以机器人文档保存原文件（上限 20 MB）。消息删除失败后需重试或将副本人工标记为已删除。",
       "settings.botToken.label": "机器人令牌",
       "settings.chatId.label": "聊天 ID",
       "settings.chatId.description":

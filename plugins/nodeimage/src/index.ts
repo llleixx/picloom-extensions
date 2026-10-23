@@ -37,7 +37,7 @@ export const nodeImageStorage: Definition<"storage"> = {
     "en-US": {
       "package.name": "NodeImage Storage",
       "package.description":
-        "Store images on NodeImage. Remote deletion is unsupported; failed deletion requires manually ending replica management.",
+        "Store images on NodeImage. Remote deletion is unsupported; failed deletion requires manually marking the replica as deleted.",
       "settings.apiKey.label": "API key",
       "settings.redirect.label": "Redirect reads (302)",
       "settings.timeoutMs.label": "Timeout (ms)",
@@ -45,7 +45,7 @@ export const nodeImageStorage: Definition<"storage"> = {
     "zh-CN": {
       "package.name": "NodeImage 存储",
       "package.description":
-        "使用 NodeImage 存储图片。不支持远端删除；删除失败后需人工终结副本。",
+        "使用 NodeImage 存储图片。不支持远端删除；删除失败后需将副本人工标记为已删除。",
       "settings.apiKey.label": "API 密钥",
       "settings.redirect.label": "302 重定向",
       "settings.timeoutMs.label": "超时（毫秒）",

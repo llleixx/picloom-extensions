@@ -40,6 +40,6 @@ Fields marked immutable cannot change after creation.
 
 Supports upload, read, delete and import, subject to the upstream mount. Reads redirect to the upstream download URL by default; disable `redirect` to serve content through Picloom. Download URLs must work without the API token. The endpoint and root cannot change after creation.
 
-Deletion requires the object location saved after a successful write or import. Missing location causes deletion failure; manually terminate the replica to end its management.
+Deletion requires the object location saved after a successful write or import. Missing location causes deletion failure; manually mark the replica as deleted to end its management.
 
 Import requires directory access and does not accept a separate directory password. Scans use OpenList listings, which may be cached. Network failures, timeouts, rate limits and upstream server errors allow retries; a retry may create duplicate remote objects.
