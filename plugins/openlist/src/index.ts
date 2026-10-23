@@ -33,7 +33,7 @@ function endpointUrl(value: string) {
     throw new Error();
   return url.href.replace(/\/$/, "");
 }
-function error(code: string, writing = false) {
+function error(code: string) {
   return new PluginError(
     code === "CONFIG"
       ? "INVALID_CONFIG"
@@ -41,8 +41,7 @@ function error(code: string, writing = false) {
         ? "INVALID_DATA"
         : "SERVICE",
     "OpenList request failed",
-    !writing,
-    writing ? "unknown" : "notApplied",
+    code === "READ",
   );
 }
 
@@ -160,7 +159,6 @@ export const openListStorage: Definition<"storage"> = {
           "INVALID_INPUT",
           "Invalid OpenList locator",
           false,
-          "notApplied",
         );
       }
       return path as string;
@@ -171,7 +169,6 @@ export const openListStorage: Definition<"storage"> = {
       signal: AbortSignal,
     ) {
       const writing = path === "put";
-      const deleting = path === "remove";
       let headers: Headers;
       try {
         signal.throwIfAborted();
@@ -184,7 +181,6 @@ export const openListStorage: Definition<"storage"> = {
           "FAILED",
           "Could not prepare OpenList request",
           false,
-          "notApplied",
         );
       }
       let response: Response;
@@ -196,17 +192,7 @@ export const openListStorage: Definition<"storage"> = {
           redirect: "error",
         });
       } catch (cause) {
-        // Connection refusal means the request never reached the server.
-        const refused =
-          cause instanceof Error &&
-          "code" in cause &&
-          cause.code === "ECONNREFUSED";
-        throw new PluginError(
-          "NETWORK",
-          "OpenList request failed",
-          refused || !writing,
-          refused ? "notApplied" : "unknown",
-        );
+        throw new PluginError("NETWORK", "OpenList request failed", true);
       }
       try {
         // OpenList often returns HTTP 200 even when its JSON code reports failure.
@@ -219,10 +205,9 @@ export const openListStorage: Definition<"storage"> = {
                 ? "RATE_LIMITED"
                 : "SERVICE",
             "OpenList rejected the request",
-            response.status === 429 || (!writing && response.status >= 500),
-            (writing || deleting) && ![401, 403, 429].includes(response.status)
-              ? "unknown"
-              : "notApplied",
+            response.status === 408 ||
+              response.status === 429 ||
+              response.status >= 500,
           );
         }
         let result;
@@ -234,8 +219,7 @@ export const openListStorage: Definition<"storage"> = {
             throw new PluginError(
               "INVALID_DATA",
               "Invalid OpenList response",
-              !writing,
-              "unknown",
+              false,
             );
           throw cause;
         }
@@ -248,23 +232,15 @@ export const openListStorage: Definition<"storage"> = {
                 ? "RATE_LIMITED"
                 : "SERVICE",
             "OpenList rejected the request",
-            code === 429 || (!writing && code >= 500),
-            (writing || deleting) && ![401, 403, 429].includes(code)
-              ? "unknown"
-              : "notApplied",
+            code === 408 || code === 429 || code >= 500,
           );
         }
         // As-Task=false must not be silently turned into a background task.
-        if (writing && result.data?.task) throw error("ASYNC", true);
+        if (writing && result.data?.task) throw error("ASYNC");
         return result.data;
       } catch (cause) {
         if (isPluginError(cause)) throw cause;
-        throw new PluginError(
-          "NETWORK",
-          "OpenList request failed",
-          !writing,
-          "unknown",
-        );
+        throw new PluginError("NETWORK", "OpenList request failed", true);
       }
     }
     async function info(path: string, signal: AbortSignal) {
@@ -340,7 +316,11 @@ export const openListStorage: Definition<"storage"> = {
         }
         // Cache active directory pages only for this call; cursors contain positions, not listings.
         const pages = new Map<Frame, { content: Entry[]; total: number }>();
-        const items: Array<{ storageKey: string; byteSize: number }> = [];
+        const items: Array<{
+          storageKey: string;
+          locator: { path: string };
+          byteSize: number;
+        }> = [];
         let requests = 0;
         while (stack.length && items.length < limit) {
           ctx.signal.throwIfAborted();
@@ -413,7 +393,12 @@ export const openListStorage: Definition<"storage"> = {
             : entry.name;
           if (entry.is_dir)
             stack.push({ directory: storageKey, page: 1, index: 0 });
-          else items.push({ storageKey, byteSize: entry.size });
+          else
+            items.push({
+              storageKey,
+              locator: { path: pathFor(storageKey, null) },
+              byteSize: entry.size,
+            });
         }
         const nextCursor = stack.length ? encodeCursor(scope, stack) : null;
         if (nextCursor && nextCursor.length > 32768)
@@ -431,7 +416,6 @@ export const openListStorage: Definition<"storage"> = {
             "INVALID_INPUT",
             "OpenList upload requires a known file size",
             false,
-            "notApplied",
           );
         const path = pathFor(storageKey, null);
         const signal = signalFor(ctx.signal);
@@ -444,7 +428,6 @@ export const openListStorage: Definition<"storage"> = {
             "FAILED",
             "Could not prepare OpenList upload",
             false,
-            "notApplied",
           );
         }
         const abort = () => {
@@ -484,7 +467,7 @@ export const openListStorage: Definition<"storage"> = {
             },
             signal,
           );
-          return { locator: null };
+          return { locator: { path } };
         } finally {
           signal.removeEventListener("abort", abort);
           await reader.cancel().catch(() => {});
@@ -527,6 +510,11 @@ export const openListStorage: Definition<"storage"> = {
       },
       async delete({ storageKey, locator }, ctx) {
         ctx.signal.throwIfAborted();
+        if (locator === null)
+          throw new PluginError(
+            "INVALID_INPUT",
+            "Missing confirmed OpenList locator",
+          );
         const path = pathFor(storageKey, locator);
         const slash = path.lastIndexOf("/");
         await request(
@@ -541,10 +529,6 @@ export const openListStorage: Definition<"storage"> = {
           },
           signalFor(ctx.signal),
         );
-      },
-      // Neither presence nor size proves which PUT operation created an object.
-      async recoverWrite() {
-        return { status: "unknown" };
       },
     };
   },

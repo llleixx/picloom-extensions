@@ -30,12 +30,7 @@ function stored(locator: Locator): TelegramLocator {
     Number(locator.byteSize) < 0 ||
     typeof locator.mimeType !== "string"
   )
-    throw new PluginError(
-      "INVALID_INPUT",
-      "Invalid Telegram locator",
-      false,
-      "notApplied",
-    );
+    throw new PluginError("INVALID_INPUT", "Invalid Telegram locator", false);
   return locator as TelegramLocator;
 }
 export const telegramStorage: Definition<"storage"> = {
@@ -46,7 +41,7 @@ export const telegramStorage: Definition<"storage"> = {
     "en-US": {
       "package.name": "Telegram Storage",
       "package.description":
-        "Store originals as bot documents (20 MB limit). Non-deletable messages finish local cleanup but may remain on Telegram.",
+        "Store originals as bot documents (20 MB limit). Failed message deletion requires retrying or manually ending replica management.",
       "settings.botToken.label": "Bot token",
       "settings.chatId.label": "Chat ID",
       "settings.chatId.description":
@@ -56,7 +51,7 @@ export const telegramStorage: Definition<"storage"> = {
     "zh-CN": {
       "package.name": "Telegram 存储",
       "package.description":
-        "以机器人文档保存原文件（上限 20 MB）。消息无法删除时仅完成本地清理，Telegram 消息可能保留。",
+        "以机器人文档保存原文件（上限 20 MB）。消息删除失败后需重试或人工终结副本。",
       "settings.botToken.label": "机器人令牌",
       "settings.chatId.label": "聊天 ID",
       "settings.chatId.description":
@@ -114,7 +109,6 @@ export const telegramStorage: Definition<"storage"> = {
           "ACCESS_DENIED",
           "Invalid Telegram bot token",
           false,
-          "notApplied",
         );
       return value;
     }
@@ -124,7 +118,6 @@ export const telegramStorage: Definition<"storage"> = {
       signal: AbortSignal,
       credential?: string,
     ): Promise<any> {
-      const writing = method === "sendDocument";
       const secret = credential ?? (await token());
       try {
         const response = await fetch(`${origin}/bot${secret}/${method}`, {
@@ -133,18 +126,37 @@ export const telegramStorage: Definition<"storage"> = {
           redirect: "error",
           signal,
         });
-        const data = await response.json().catch(() => null);
-        // Missing messages and explicit platform deletion restrictions finish local cleanup.
-        // A non-deletable message may still exist remotely (e.g. beyond 48 hours).
+        const data = await response.json().catch((error) => {
+          if (error instanceof SyntaxError) return null;
+          throw error;
+        });
+        // An explicit missing-message response confirms there is nothing left to delete.
         if (
           method === "deleteMessage" &&
           response.status === 400 &&
           data?.ok === false &&
           data.error_code === 400 &&
-          (data.description === "Bad Request: message to delete not found" ||
-            data.description === "Bad Request: message can't be deleted")
+          data.description === "Bad Request: message to delete not found"
         )
           return true;
+        if (
+          method === "deleteMessage" &&
+          data?.ok === false &&
+          data.error_code === 400 &&
+          data.description === "Bad Request: message can't be deleted"
+        )
+          throw new PluginError(
+            "UNSUPPORTED",
+            "Telegram cannot delete this message",
+          );
+        if (!response.ok && !Number.isInteger(data?.error_code))
+          throw new PluginError(
+            response.status === 429 ? "RATE_LIMITED" : "SERVICE",
+            "Telegram rejected the request",
+            response.status === 408 ||
+              response.status === 429 ||
+              response.status >= 500,
+          );
         if (data?.ok === false && Number.isInteger(data.error_code)) {
           const status = data.error_code;
           throw new PluginError(
@@ -154,27 +166,20 @@ export const telegramStorage: Definition<"storage"> = {
                 ? "RATE_LIMITED"
                 : "SERVICE",
             "Telegram rejected the request",
-            status === 429 || (!writing && status >= 500),
-            status >= 400 && status < 500 ? "notApplied" : "unknown",
+            status === 408 || status === 429 || status >= 500,
           );
         }
         if (!response.ok || data?.ok !== true || data.result === undefined)
           throw new PluginError(
             "INVALID_DATA",
             "Unconfirmed Telegram response",
-            !writing,
-            "unknown",
+            false,
           );
         return data.result;
       } catch (error) {
         if (isPluginError(error)) throw error;
         // fetch errors may contain the token-bearing URL. Never forward their text/cause.
-        throw new PluginError(
-          "NETWORK",
-          "Telegram request outcome is unknown",
-          !writing,
-          "unknown",
-        );
+        throw new PluginError("NETWORK", "Telegram request failed", true);
       }
     }
     async function info(
@@ -214,7 +219,6 @@ export const telegramStorage: Definition<"storage"> = {
             "RESOURCE_LIMIT",
             "Telegram requires a known size of at most 20,000,000 bytes",
             false,
-            "notApplied",
           );
         const signal = signalFor(ctx.signal);
         const reader = (await file.openRead()).getReader();
@@ -240,7 +244,6 @@ export const telegramStorage: Definition<"storage"> = {
             "RESOURCE_LIMIT",
             "Could not prepare Telegram upload with the declared size",
             false,
-            "notApplied",
           );
         } finally {
           signal.removeEventListener("abort", abort);
@@ -270,7 +273,6 @@ export const telegramStorage: Definition<"storage"> = {
             "INVALID_DATA",
             "Unconfirmed Telegram document upload",
             false,
-            "unknown",
           );
         return {
           locator: {
@@ -347,36 +349,19 @@ export const telegramStorage: Definition<"storage"> = {
       async delete({ locator }, ctx) {
         ctx.signal.throwIfAborted();
         const value = stored(locator);
-        let result: unknown;
-        try {
-          result = await api(
-            "deleteMessage",
-            new URLSearchParams({
-              chat_id: value.chatId,
-              message_id: String(value.messageId),
-            }),
-            signalFor(ctx.signal),
-          );
-        } catch (error) {
-          if (
-            isPluginError(error) &&
-            error.code === "SERVICE" &&
-            error.outcome === "notApplied"
-          )
-            throw new PluginError(
-              "UNSUPPORTED",
-              "Telegram refused message deletion; check the 48-hour limit, message existence and bot permissions",
-              false,
-              "notApplied",
-            );
-          throw error;
-        }
+        const result = await api(
+          "deleteMessage",
+          new URLSearchParams({
+            chat_id: value.chatId,
+            message_id: String(value.messageId),
+          }),
+          signalFor(ctx.signal),
+        );
         if (result !== true)
           throw new PluginError(
             "SERVICE",
             "Telegram did not confirm message deletion",
             true,
-            "unknown",
           );
       },
     };

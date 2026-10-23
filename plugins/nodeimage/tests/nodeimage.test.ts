@@ -2,7 +2,7 @@ import { test, expect, spyOn } from "bun:test";
 import { services, image } from "../../../tests/services";
 import definition from "../src";
 
-test("NodeImage storage: upload, redirect, stream, uncertain writes and local-only deletion", async () => {
+test("NodeImage storage: upload, redirect, stream, retryable writes and unsupported deletion", async () => {
   const png = await image();
   let uploads = 0,
     downloads = 0,
@@ -88,20 +88,6 @@ test("NodeImage storage: upload, redirect, stream, uncertain writes and local-on
     ).toBe(true);
     expect(downloads).toBe(1);
     try {
-      const locator = { imageId: remoteId, url };
-      const recovery = {
-        operationId: "op",
-        fileId: "file",
-        storageKey: "a.png",
-        expectedSize: png.length,
-        locator: null,
-      };
-      expect(await runtime.recoverWrite!(recovery, ctx)).toEqual({
-        status: "unknown",
-      });
-      expect(
-        await runtime.recoverWrite!({ ...recovery, locator }, ctx),
-      ).toMatchObject({ status: "stored" });
       expect(
         await runtime.read(
           { storageKey: remoteId, locator: null, mode: "auto" },
@@ -130,9 +116,8 @@ test("NodeImage storage: upload, redirect, stream, uncertain writes and local-on
           ctx,
         ),
       ).rejects.toMatchObject({
-        code: "FAILED",
-        outcome: "unknown",
-        retryable: false,
+        code: "NETWORK",
+        retryable: true,
       });
       expect(uploads).toBe(2);
     } finally {
@@ -145,7 +130,7 @@ test("NodeImage storage: upload, redirect, stream, uncertain writes and local-on
             { operationId: "cleanup", storageKey: "a.png", locator },
             ctx,
           ),
-        ).resolves.toBeUndefined();
+        ).rejects.toMatchObject({ code: "UNSUPPORTED", retryable: false });
       }
       expect(fetcher.mock.calls.length).toBe(requestsBeforeDeletion);
     } finally {

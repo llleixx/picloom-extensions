@@ -42,8 +42,7 @@ test.skipIf(process.env.OPENLIST_LIVE !== "1")(
       requestId: fileId,
       log() {},
     };
-    // Known path permits cleanup even if the upload response is lost.
-    const locator: Locator = null;
+    let locator: Locator = null;
     try {
       const result = await runtime.write(
         {
@@ -64,7 +63,8 @@ test.skipIf(process.env.OPENLIST_LIVE !== "1")(
         },
         context,
       );
-      expect(result.locator).toEqual(locator);
+      locator = result.locator ?? null;
+      expect(locator).not.toBeNull();
       const auto = await runtime.read(
         { storageKey, locator, mode: "auto" },
         context,
@@ -82,14 +82,16 @@ test.skipIf(process.env.OPENLIST_LIVE !== "1")(
     } finally {
       // This only targets this test's randomly generated object.
       const cleanup = { ...context, signal: AbortSignal.timeout(60000) };
-      await runtime.delete(
-        { operationId: fileId, storageKey, locator },
-        cleanup,
-      );
-      await runtime.delete(
-        { operationId: fileId, storageKey, locator },
-        cleanup,
-      );
+      if (locator !== null) {
+        await runtime.delete(
+          { operationId: fileId, storageKey, locator },
+          cleanup,
+        );
+        await runtime.delete(
+          { operationId: fileId, storageKey, locator },
+          cleanup,
+        );
+      }
       await runtime.dispose?.();
     }
   },

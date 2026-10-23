@@ -32,6 +32,6 @@ Fields marked immutable cannot change after creation.
 
 ## Behavior and limitations
 
-Files are limited to 20,000,000 bytes. Picloom serves reads without exposing the bot token. Import and write recovery are unsupported; unknown upload results are not automatically resent. The chat ID cannot change after creation.
+Files are limited to 20,000,000 bytes. Picloom serves reads without exposing the bot token. Import is unsupported. Transient upload failures allow retries and may send duplicate documents. The chat ID cannot change after creation.
 
-Deletion depends on message age and bot permissions. If Telegram reports a missing message or “message can't be deleted” (for example, after 48 hours), Picloom removes its local record; the remote message may remain. Other API, authentication and network errors are reported.
+Deletion depends on message age and bot permissions. An explicit missing-message response completes deletion. If Telegram cannot delete the message (for example, after 48 hours), Picloom records deletion failure; manually end replica management to stop managing the retained message. Other API, authentication and network errors are reported.

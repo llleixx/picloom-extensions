@@ -97,7 +97,6 @@ test("Telegram uploads original bytes as a document and keeps secrets out of the
     return uploadResult();
   });
   const plugin = await runtime();
-  expect(plugin.recoverWrite).toBeUndefined();
   const result = await plugin.write(writeInput, context);
   expect(result.locator).toEqual(locator);
   expect(JSON.stringify(result)).not.toContain(botToken);
@@ -148,29 +147,36 @@ test("Telegram rejects unknown, excessive and mismatched file sizes before a rem
         },
         context,
       ),
-    ).rejects.toMatchObject({ code: "RESOURCE_LIMIT", outcome: "notApplied" });
+    ).rejects.toMatchObject({ code: "RESOURCE_LIMIT" });
   }
   expect(mock).not.toHaveBeenCalled();
 });
 
-test("Telegram lost upload responses and malformed successes remain unknown without automatic retries", async () => {
+test("Telegram retries transient upload failures and rejects malformed success without leaking credentials", async () => {
   const plugin = await runtime();
-  for (const behavior of [
-    () => {
-      throw new TypeError(
-        `connection failed at https://api.telegram.org/bot${botToken}/sendDocument`,
-      );
-    },
-    () => Response.json({ ok: true, result: { message_id: 123 } }),
-    () => new Response("gateway failed", { status: 502 }),
-    () => Response.json({ ok: false, error_code: 503, description: botToken }),
-  ]) {
+  for (const [retryable, behavior] of [
+    [
+      true,
+      () => {
+        throw new TypeError(
+          `connection failed at https://api.telegram.org/bot${botToken}/sendDocument`,
+        );
+      },
+    ],
+    [false, () => Response.json({ ok: true, result: { message_id: 123 } })],
+    [true, () => new Response("gateway failed", { status: 502 })],
+    [
+      true,
+      () =>
+        Response.json({ ok: false, error_code: 503, description: botToken }),
+    ],
+  ] as const) {
     mockFetch(behavior);
     try {
       await plugin.write(writeInput, context);
       throw new Error("expected failure");
     } catch (error) {
-      expect(error).toMatchObject({ outcome: "unknown", retryable: false });
+      expect(error).toMatchObject({ retryable });
       expect(String(error)).not.toContain(botToken);
     }
     mock?.mockRestore();
@@ -184,7 +190,6 @@ test("Telegram explicit API failures are not reported as uploads or successful d
       Response.json({ ok: false, error_code: code, description: botToken }),
     );
     await expect(plugin.write(writeInput, context)).rejects.toMatchObject({
-      outcome: "notApplied",
       retryable: code === 429,
     });
     await expect(
@@ -192,7 +197,7 @@ test("Telegram explicit API failures are not reported as uploads or successful d
         { operationId: "delete", storageKey: "a.png", locator },
         context,
       ),
-    ).rejects.toMatchObject({ outcome: "notApplied", retryable: code === 429 });
+    ).rejects.toMatchObject({ retryable: code === 429 });
     mock?.mockRestore();
   }
 });
@@ -218,7 +223,6 @@ test("Telegram deletion requires explicit true and addresses the saved message",
     else
       await expect(promise).rejects.toMatchObject({
         code: "SERVICE",
-        outcome: "unknown",
       });
     mock?.mockRestore();
   }
@@ -263,7 +267,7 @@ test("Telegram rejects legacy or malformed locators and unsafe getFile paths", a
   }
 });
 
-test("Telegram deletion accepts explicit missing or non-deletable messages only", async () => {
+test("Telegram deletion succeeds only for explicit missing messages and fails for non-deletable messages", async () => {
   const plugin = await runtime();
   for (const description of [
     "Bad Request: message to delete not found",
@@ -281,15 +285,15 @@ test("Telegram deletion accepts explicit missing or non-deletable messages only"
       { operationId: "retry", storageKey: "a.png", locator },
       context,
     );
-    if (
-      description === "Bad Request: message to delete not found" ||
-      description === "Bad Request: message can't be deleted"
-    )
+    if (description === "Bad Request: message to delete not found")
       await action;
     else
       await expect(action).rejects.toMatchObject({
-        code: "UNSUPPORTED",
-        outcome: "notApplied",
+        code:
+          description === "Bad Request: message can't be deleted"
+            ? "UNSUPPORTED"
+            : "SERVICE",
+        retryable: false,
       });
     mock?.mockRestore();
   }
@@ -324,7 +328,7 @@ test("Telegram late download errors cannot expose the bot token", async () => {
   }
 });
 
-test("Telegram transient deletion failures can retry without retrying ambiguous uploads", async () => {
+test("Telegram transient deletion failures can retry", async () => {
   const plugin = await runtime();
   for (const behavior of [
     () => {
@@ -339,7 +343,7 @@ test("Telegram transient deletion failures can retry without retrying ambiguous 
         { operationId: "delete", storageKey: "a.png", locator },
         context,
       ),
-    ).rejects.toMatchObject({ retryable: true, outcome: "unknown" });
+    ).rejects.toMatchObject({ retryable: true });
     mock?.mockRestore();
   }
 });

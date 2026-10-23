@@ -74,7 +74,8 @@ test("OpenList HTTP protocol: PUT, fresh raw URL, credential-free download, remo
       });
     },
   });
-  let gets = 0;
+  let gets = 0,
+    removes = 0;
   const remote = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
@@ -107,6 +108,7 @@ test("OpenList HTTP protocol: PUT, fresh raw URL, credential-free download, remo
         });
       }
       expect(route).toBe("/base/api/fs/remove");
+      removes++;
       expect(data.dir).toBe("/挂载 a%#");
       expect(data.names).toHaveLength(1);
       objects.delete(data.dir + "/" + data.names[0]);
@@ -133,8 +135,8 @@ test("OpenList HTTP protocol: PUT, fresh raw URL, credential-free download, remo
       },
       ctx(),
     );
-    expect(first.locator).toBeNull();
-    expect(second.locator).toBeNull();
+    expect(first.locator).toEqual({ path: "/挂载 a%#/same.svg" });
+    expect(second.locator).toEqual({ path: "/挂载 a%#/second.svg" });
     expect([...objects.keys()]).toEqual([
       "/挂载 a%#/same.svg",
       "/挂载 a%#/second.svg",
@@ -214,18 +216,18 @@ test("OpenList HTTP protocol: PUT, fresh raw URL, credential-free download, remo
     );
     expect(forcedRead.type).toBe("stream");
     if (forcedRead.type === "stream") await forcedRead.stream.cancel();
-    expect(
-      await runtime.recoverWrite!(
+    await expect(
+      runtime.delete(
         {
-          operationId: "op1",
-          fileId: "file-1",
+          operationId: "missing-locator",
           storageKey: "same.svg",
-          expectedSize: bytes.length,
-          locator: first.locator!,
+          locator: null,
         },
         ctx(),
       ),
-    ).toEqual({ status: "unknown" });
+    ).rejects.toMatchObject({ code: "INVALID_INPUT", retryable: false });
+    expect(removes).toBe(0);
+    expect(objects.has("/挂载 a%#/same.svg")).toBe(true);
     await runtime.delete(
       { operationId: "del", storageKey: "same.svg", locator: first.locator! },
       ctx(),
@@ -248,7 +250,7 @@ test("OpenList HTTP protocol: PUT, fresh raw URL, credential-free download, remo
         },
         ctx(),
       ),
-    ).rejects.toMatchObject({ code: "INVALID_INPUT", outcome: "notApplied" });
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
     expect(runtime.listFiles).toBeFunction();
   } finally {
     remote.stop(true);
@@ -276,6 +278,8 @@ test("OpenList rejects API redirects, auth errors, false success, async PUT, sec
         return new Response("upstream error " + token, { status: 500 });
       if (mode === "redirect") return Response.redirect(sink.url.href, 307);
       if (mode === "http-denied") return new Response(token, { status: 401 });
+      if (mode === "http-not-found") return new Response(null, { status: 404 });
+      if (mode === "json-not-found") return Response.json({ code: 404 });
       if (mode === "denied")
         return Response.json({ code: 403, message: token });
       if (mode === "http-rate-limit")
@@ -319,8 +323,7 @@ test("OpenList rejects API redirects, auth errors, false success, async PUT, sec
       expect(caught).toBeInstanceOf(PluginError);
       expect(String(caught)).not.toContain(token);
       expect(caught).toMatchObject({
-        outcome: value.includes("denied") ? "notApplied" : "unknown",
-        retryable: false,
+        retryable: value === "redirect",
       });
       if (value === "malformed")
         expect(caught).toMatchObject({ code: "INVALID_DATA" });
@@ -341,20 +344,34 @@ test("OpenList rejects API redirects, auth errors, false success, async PUT, sec
     }
     for (const value of ["http-rate-limit", "json-rate-limit", "unavailable"]) {
       mode = value;
-      const limited = value.endsWith("rate-limit");
       await expect(write()).rejects.toMatchObject({
-        outcome: limited ? "notApplied" : "unknown",
-        retryable: limited,
+        retryable: true,
       });
       await expect(
         runtime.delete(
-          { operationId: "del", storageKey: "a.svg", locator: null },
+          {
+            operationId: "del",
+            storageKey: "a.svg",
+            locator: { path: "/挂载 a%#/a.svg" },
+          },
           ctx(),
         ),
       ).rejects.toMatchObject({
-        outcome: limited ? "notApplied" : "unknown",
         retryable: true,
       });
+    }
+    for (const value of ["http-not-found", "json-not-found"]) {
+      mode = value;
+      await expect(
+        runtime.delete(
+          {
+            operationId: "del",
+            storageKey: "a.svg",
+            locator: { path: "/挂载 a%#/a.svg" },
+          },
+          ctx(),
+        ),
+      ).rejects.toMatchObject({ retryable: false });
     }
     mode = "malformed";
     await expect(
@@ -366,7 +383,7 @@ test("OpenList rejects API redirects, auth errors, false success, async PUT, sec
         },
         ctx(),
       ),
-    ).rejects.toMatchObject({ outcome: "unknown", retryable: true });
+    ).rejects.toMatchObject({ code: "INVALID_DATA", retryable: false });
     expect(redirected).toBe(0);
   } finally {
     remote.stop(true);
@@ -441,7 +458,7 @@ test("OpenList validates configuration and cancels/releases upload input on abor
           },
           { ...ctx(), signal: controller.signal },
         ),
-      ).rejects.toMatchObject({ outcome: "unknown", retryable: false });
+      ).rejects.toMatchObject({ retryable: true });
     } finally {
       clearTimeout(timer);
     }
@@ -470,12 +487,11 @@ test("OpenList connection refusal is a retryable failure with no remote write", 
     ),
   ).rejects.toMatchObject({
     code: "NETWORK",
-    outcome: "notApplied",
     retryable: true,
   });
 });
 
-test("OpenList request preparation failures do not become network or unknown writes", async () => {
+test("OpenList request preparation failures do not become network failures", async () => {
   let requests = 0;
   const remote = Bun.serve({
     hostname: "127.0.0.1",
@@ -507,7 +523,6 @@ test("OpenList request preparation failures do not become network or unknown wri
     }
     expect(caught).toMatchObject({
       code: "FAILED",
-      outcome: "notApplied",
       retryable: false,
     });
     expect(String(caught)).not.toContain(token);
@@ -517,7 +532,7 @@ test("OpenList request preparation failures do not become network or unknown wri
   }
 });
 
-test("OpenList lost response after receiving the upload remains an unknown write", async () => {
+test("OpenList lost response after receiving the upload is retryable", async () => {
   let received = false;
   const remote = Bun.serve({
     hostname: "127.0.0.1",
@@ -538,8 +553,7 @@ test("OpenList lost response after receiving the upload remains an unknown write
       ),
     ).rejects.toMatchObject({
       code: "NETWORK",
-      outcome: "unknown",
-      retryable: false,
+      retryable: true,
     });
     expect(received).toBe(true);
   } finally {
@@ -595,6 +609,7 @@ test("OpenList enumeration resumes nested and paginated directories without chan
       expect(result.items.length).toBeLessThanOrEqual(37);
       for (const item of result.items) {
         expect(item.byteSize).toBe(12);
+        expect(item.locator).toEqual({ path: "/挂载 a%#/" + item.storageKey });
         keys.push(item.storageKey);
       }
       if (result.nextCursor) expect(result.nextCursor).not.toBe(cursor);

@@ -30,6 +30,6 @@ Enter a NodeImage API key and connect the source through a storage group to an u
 
 ## Behavior and limitations
 
-Uses `https://api.nodeimage.com`. Reads redirect to the remote image by default; disable `redirect` to serve content through Picloom. Existing images cannot be imported. An unknown upload result cannot be recovered without a remote locator.
+Uses `https://api.nodeimage.com`. Reads redirect to the remote image by default; disable `redirect` to serve content through Picloom. Existing images cannot be imported. Transient upload failures can retry and may create duplicate remote images.
 
-Deletion removes the Picloom record only; **the image remains on NodeImage**.
+Remote deletion is unsupported. Deletion fails in Picloom; manually end replica management to stop managing the retained remote image.

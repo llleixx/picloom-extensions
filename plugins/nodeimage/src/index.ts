@@ -15,12 +15,7 @@ function locatorId(storageKey: string, locator: Locator): string {
         ? locator.imageId
         : undefined;
   if (typeof id !== "string" || !/^[a-zA-Z0-9_-]+$/.test(id))
-    throw new PluginError(
-      "INVALID_INPUT",
-      "Invalid NodeImage image ID",
-      false,
-      "notApplied",
-    );
+    throw new PluginError("INVALID_INPUT", "Invalid NodeImage image ID", false);
   return id;
 }
 function imageUrl(value: unknown): string {
@@ -42,7 +37,7 @@ export const nodeImageStorage: Definition<"storage"> = {
     "en-US": {
       "package.name": "NodeImage Storage",
       "package.description":
-        "Store images on NodeImage. Deletion only cleans up Picloom records without a network request; remote images remain.",
+        "Store images on NodeImage. Remote deletion is unsupported; failed deletion requires manually ending replica management.",
       "settings.apiKey.label": "API key",
       "settings.redirect.label": "Redirect reads (302)",
       "settings.timeoutMs.label": "Timeout (ms)",
@@ -50,7 +45,7 @@ export const nodeImageStorage: Definition<"storage"> = {
     "zh-CN": {
       "package.name": "NodeImage 存储",
       "package.description":
-        "使用 NodeImage 存储图片。删除仅清理 Picloom 本地记录，不发送网络请求，远端图片仍保留。",
+        "使用 NodeImage 存储图片。不支持远端删除；删除失败后需人工终结副本。",
       "settings.apiKey.label": "API 密钥",
       "settings.redirect.label": "302 重定向",
       "settings.timeoutMs.label": "超时（毫秒）",
@@ -129,7 +124,7 @@ export const nodeImageStorage: Definition<"storage"> = {
         size: value.size,
       };
     }
-    function httpError(status: number, writing = false) {
+    function httpError(status: number) {
       return new PluginError(
         status === 401 || status === 403
           ? "ACCESS_DENIED"
@@ -137,8 +132,7 @@ export const nodeImageStorage: Definition<"storage"> = {
             ? "RATE_LIMITED"
             : "SERVICE",
         "NodeImage rejected the request",
-        status === 429 || status >= 500,
-        writing && status >= 500 ? "unknown" : "notApplied",
+        status === 408 || status === 429 || status >= 500,
       );
     }
     return {
@@ -166,7 +160,6 @@ export const nodeImageStorage: Definition<"storage"> = {
             "FAILED",
             "Could not prepare NodeImage upload",
             true,
-            "notApplied",
           );
         } finally {
           signal.removeEventListener("abort", abort);
@@ -189,7 +182,7 @@ export const nodeImageStorage: Definition<"storage"> = {
           );
           if (!response.ok) {
             await response.body?.cancel();
-            throw httpError(response.status, true);
+            throw httpError(response.status);
           }
           const data = await response.json();
           if (
@@ -201,7 +194,6 @@ export const nodeImageStorage: Definition<"storage"> = {
               "INVALID_DATA",
               "Invalid NodeImage upload result",
               false,
-              "unknown",
             );
           return {
             locator: {
@@ -211,12 +203,11 @@ export const nodeImageStorage: Definition<"storage"> = {
           };
         } catch (error) {
           if (isPluginError(error)) throw error;
-          // No idempotency key or lookup by operation ID: retry could create a duplicate.
+          // Retrying may create another remote object.
           throw new PluginError(
-            "FAILED",
-            "NodeImage upload outcome is unknown",
-            false,
-            "unknown",
+            "NETWORK",
+            "NodeImage upload request failed",
+            true,
           );
         }
       },
@@ -253,26 +244,10 @@ export const nodeImageStorage: Definition<"storage"> = {
         };
       },
       async delete() {
-        // NodeImage does not support deletion; allow the host to finish local cleanup.
-      },
-      async recoverWrite({ storageKey, locator, expectedSize }, ctx) {
-        ctx.signal.throwIfAborted();
-        if (locator === null) return { status: "unknown" };
-        try {
-          const found = await info(
-            locatorId(storageKey, locator),
-            signalFor(ctx.signal),
-          );
-          // A deleted image does not prove the original POST was never applied.
-          return found && found.size === expectedSize
-            ? {
-                status: "stored",
-                locator: { imageId: found.imageId, url: found.url },
-              }
-            : { status: "unknown" };
-        } catch {
-          return { status: "unknown" };
-        }
+        throw new PluginError(
+          "UNSUPPORTED",
+          "NodeImage does not support remote deletion",
+        );
       },
     };
   },

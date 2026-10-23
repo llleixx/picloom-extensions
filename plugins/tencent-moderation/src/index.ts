@@ -48,7 +48,6 @@ async function content(file: FileInput, signal: AbortSignal, limit: number) {
       "RESOURCE_LIMIT",
       "Image exceeds the configured content submission limit",
       false,
-      "notApplied",
     );
   if (file.metadata.byteSize !== null && file.metadata.byteSize > limit)
     throw tooLarge();

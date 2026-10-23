@@ -4,7 +4,7 @@ import { services, image } from "../../../tests/services";
 import definition from "../src";
 const enabled = !!process.env.NODEIMAGE_TEST_KEY;
 (enabled ? test : test.skip)(
-  "real NodeImage upload, redirect, stream and local-only deletion",
+  "real NodeImage upload, redirect, stream and unsupported deletion",
   async () => {
     const png = await image();
     const runtime = await definition.createInstance({
@@ -57,11 +57,15 @@ const enabled = !!process.env.NODEIMAGE_TEST_KEY;
       );
       const resized = await sharp(bytes).resize({ width: 16 }).png().toBuffer();
       expect((await sharp(resized).metadata()).width).toBe(16);
-      await runtime.delete(
-        { storageKey, locator, operationId: crypto.randomUUID() },
-        ctx,
+      await expect(
+        runtime.delete(
+          { storageKey, locator, operationId: crypto.randomUUID() },
+          ctx,
+        ),
+      ).rejects.toMatchObject({ code: "UNSUPPORTED" });
+      console.log(
+        "NodeImage test object retained: remote deletion is unsupported",
       );
-      console.log("NodeImage test object retained: deletion only cleans up local records");
     } finally {
       await runtime.dispose?.();
     }
