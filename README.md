@@ -16,7 +16,7 @@ Install an extension ZIP as Owner through Picloom plugin or theme management. Co
 
 ## Development
 
-Use Bun 1.4.3. SDKs and tools use exact npm versions; no sibling tooling checkout is required. From the repository root:
+Use Bun 1.4.4. SDKs and tools use exact npm versions; no sibling tooling checkout is required. From the repository root:
 
 ```sh
 bun install --frozen-lockfile

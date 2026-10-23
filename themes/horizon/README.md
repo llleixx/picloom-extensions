@@ -33,7 +33,7 @@ Cleared text stays empty without another language’s fallback. The theme does n
 
 ## Develop / 开发
 
-Use Bun 1.4.3+. From the extensions repository root / 使用 Bun 1.4.3+，在扩展仓库根目录执行：
+Use Bun 1.4.4+. From the extensions repository root / 使用 Bun 1.4.4+，在扩展仓库根目录执行：
 
 ```sh
 bun install --frozen-lockfile
