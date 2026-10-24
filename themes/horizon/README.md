@@ -12,6 +12,10 @@ Install `picloom.horizon-<version>.zip` as Owner in **Themes**, configure, previ
 
 Site name, description, Logo, favicon and language are configured in **Site settings**. 网站名称、简介、Logo、favicon 和语言在 **站点设置** 中配置。详细步骤见[使用主题](https://llleixx.github.io/picloom/guide/themes.html)。
 
+Choose the copy format and auto-copy setting at the top-right of the drop area. Signed-in users can select or create tags and collections beside the upload profile dropdown. Selected items can be removed directly; use the count to see more. Selection opens in a compact popover on desktop and a bottom sheet on mobile.
+
+在拖拽区右上角选择复制格式和自动复制。登录后，通过上传方案下拉框旁的按钮选择或创建标签与集合。已选项可直接移除，更多项通过数量入口查看。桌面端使用紧凑浮层，移动端使用底部弹层。
+
 ## Configuration / 配置
 
 | Field / 字段 | Behavior / 行为 |

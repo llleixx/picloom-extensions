@@ -6,6 +6,7 @@ body {
   --paper: #f6f9fc;
   --muted: #bbc8d4;
   --panel: rgba(13, 28, 43, 0.79);
+  --popover: rgba(16, 33, 49, 0.97);
   --edge: rgba(221, 238, 255, 0.19);
   --mint: #c7efe0;
   position: relative;
@@ -260,22 +261,31 @@ body {
   margin: 10px 0 24px !important;
   line-height: 1.7;
 }
-.hz-drop {
+.hz-dropzone {
+  position: relative;
   border: 1px dashed rgba(208, 232, 245, 0.3);
   border-radius: 10px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 27px 15px 22px;
-  cursor: pointer;
   background: rgba(255, 255, 255, 0.025);
   transition:
     background 0.25s,
     border-color 0.25s;
 }
-.hz-drop:hover,
-.hz-drop.is-dragging {
+.hz-copy-settings {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 2;
+}
+.hz-drop {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 15px 22px;
+  cursor: pointer;
+}
+.hz-dropzone:has(.hz-drop:hover),
+.hz-dropzone.is-dragging {
   background: rgba(199, 239, 224, 0.07);
   border-color: var(--mint);
 }
@@ -316,17 +326,6 @@ body {
   font-size: 11px;
   font-weight: 600;
 }
-.hz-profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 23px;
-  font-size: 11px;
-}
-.hz-profile > label {
-  color: var(--muted);
-  white-space: nowrap;
-}
 .hz-panel select {
   color: var(--paper);
   background: rgba(255, 255, 255, 0.06);
@@ -339,8 +338,10 @@ body {
   color: #eff7ff;
   background: #243746;
 }
-.hz-profile select {
-  flex: 1;
+.hz-panel .hz-profile {
+  flex: 1 1 72px;
+  width: 0;
+  max-width: 100%;
   font-size: 11px;
 }
 .hz-meta {
@@ -376,37 +377,6 @@ body {
   height: 4px;
   border-radius: 50%;
   background: var(--mint);
-}
-.hz-options {
-  margin-top: 16px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.hz-options summary {
-  cursor: pointer;
-  list-style: none;
-}
-.hz-options summary::after {
-  content: " +";
-  float: right;
-}
-.hz-options[open] summary::after {
-  content: " −";
-}
-.hz-options > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding-top: 12px;
-}
-.hz-options label {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-}
-.hz-options input {
-  accent-color: var(--mint);
 }
 .hz-url {
   display: flex;
@@ -650,6 +620,7 @@ body {
 }
 .hz-night {
   --panel: rgba(13, 20, 43, 0.82);
+  --popover: rgba(18, 25, 48, 0.97);
   --mint: #e1dcff;
   --muted: #bcc5df;
 }

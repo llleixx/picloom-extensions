@@ -21,7 +21,9 @@ Install `dist/picloom.horizon-1.4.1.zip` through **管理后台 → 主题**, ed
 - **Shade / 遮罩浓度**: controls the additional dark overlay for readability.
 - **Background images / 背景图片列表**: add, remove and reorder scenes. Each item has a required package asset path or HTTP(S) URL, an optional Chinese/English name and a day/night accent palette. The default list contains all four bundled illustrations. Blank names use a localized numbered label. Prefer landscape images with a quiet right side. External images depend on their origin's availability and access rules. Failed images are skipped; an empty list or all failed images shows the gradient background. Switching and playback controls appear only when at least two images have loaded. / 可增删、排序；每项包含必填图片地址、可选双语名称与浅色/夜色配色。空列表或全部加载失败时显示渐变背景，只有一张可用图片时隐藏轮播控件。
 
-Backgrounds are bundled locally; no image API is required. The upload panel uses real SDK operations, including file selection, drag/drop, paste, URL upload, profile selection, queue actions, and sharing preferences. Login uses the host's authentication and safe navigation.
+Backgrounds are bundled locally; no image API is required. The upload panel uses real SDK operations, including file selection, drag/drop, paste, URL upload, profile selection, queue actions, and sharing preferences. Tags and collections use compact triggers and removable selection chips. A shared selection surface opens as a desktop popover or mobile bottom sheet, with search, multi-select and creation. Login uses the host's authentication and safe navigation.
+
+标签与集合采用轻量入口和可移除的已选项，选择区在桌面端显示为浮层、移动端显示为底部弹层，提供搜索、多选与创建。
 
 ## Assets / 素材
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, shallowRef, watch } from "vue";
+import { Check, ChevronLeft, ChevronRight, X } from "lucide-vue-next";
 import type {
   ThemeContext,
   OrganizationItem,
@@ -7,26 +8,32 @@ import type {
 } from "@picloom/theme-sdk";
 const props = defineProps<{ context: ThemeContext; kind: OrganizationKind }>();
 const ctx = props.context,
-  snapshot = ref(ctx.getSnapshot());
+  snapshot = shallowRef(ctx.getSnapshot());
 const stop = ctx.subscribe((value) => {
   snapshot.value = value;
 });
 onUnmounted(stop);
-const search = ref(""),
+const input = ref<HTMLInputElement>(),
+  search = ref(""),
   offset = ref(0),
   items = ref<OrganizationItem[]>([]),
   total = ref(0),
   known = ref(new Map<string, string>()),
   error = ref(""),
+  loading = ref(false),
   busy = ref(false);
 const selected = computed(() =>
   props.kind === "tags"
     ? snapshot.value.organization.tagIds
     : snapshot.value.organization.collectionIds,
 );
+const selectedItems = computed(() =>
+  selected.value.map((id) => ({ id, name: known.value.get(id) ?? id })),
+);
 let generation = 0;
 async function load() {
   const request = ++generation;
+  loading.value = true;
   error.value = "";
   try {
     const result = await ctx.organization.list(props.kind, {
@@ -41,6 +48,8 @@ async function load() {
   } catch (e) {
     if (request === generation)
       error.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    if (request === generation) loading.value = false;
   }
 }
 watch(search, () => {
@@ -75,33 +84,40 @@ async function create() {
     busy.value = false;
   }
 }
+function focusSearch() {
+  input.value?.focus({ preventScroll: true });
+}
+defineExpose({ selectedItems, toggle, focusSearch });
 </script>
 <template>
   <fieldset class="organization-picker" :disabled="busy">
-    <legend>
-      {{
-        ctx.t(
-          kind === "tags" ? "organization.tags" : "organization.collections",
-        )
-      }}
-    </legend>
-    <div class="organization-chips">
+    <div
+      v-if="selectedItems.length"
+      class="organization-selected"
+      :aria-label="ctx.t('organization.selected')"
+    >
       <button
-        v-for="id in selected"
-        :key="id"
+        v-for="item in selectedItems"
+        :key="item.id"
         type="button"
-        @click="toggle(id)"
+        class="organization-chip"
+        :aria-label="ctx.t('organization.remove', { name: item.name })"
+        @click="toggle(item.id)"
       >
-        {{ known.get(id) ?? id }} ×
+        <span>{{ item.name }}</span
+        ><X :size="12" aria-hidden="true" />
       </button>
     </div>
     <div class="organization-search">
       <input
+        ref="input"
         v-model="search"
         :placeholder="ctx.t('organization.search')"
         :aria-label="
           ctx.t(
-            kind === 'tags' ? 'organization.tags' : 'organization.collections',
+            kind === 'tags'
+              ? 'organization.searchTags'
+              : 'organization.searchCollections',
           )
         "
         @keydown.enter.prevent="create"
@@ -113,7 +129,7 @@ async function create() {
         {{ ctx.t("organization.create") }}
       </button>
     </div>
-    <div class="organization-options">
+    <div class="organization-options" :aria-busy="loading">
       <button
         v-for="item in items"
         :key="item.id"
@@ -122,75 +138,147 @@ async function create() {
         :disabled="!selected.includes(item.id) && selected.length >= 100"
         @click="toggle(item.id)"
       >
-        {{ item.name }}
+        <Check
+          v-if="selected.includes(item.id)"
+          :size="12"
+          aria-hidden="true"
+        />
+        <span>{{ item.name }}</span>
       </button>
     </div>
-    <div v-if="total > 50" class="organization-search">
-      <button type="button" :disabled="offset === 0" @click="offset -= 50">
-        ←</button
-      ><span>{{ offset + 1 }}–{{ offset + items.length }} / {{ total }}</span
-      ><button
+    <p v-if="loading" class="organization-status" role="status">
+      {{ ctx.t("loading") }}
+    </p>
+    <p v-else-if="!items.length && !error" class="organization-status">
+      {{ ctx.t("organization.empty") }}
+    </p>
+    <div v-if="total > 50" class="organization-pagination">
+      <button
         type="button"
+        :aria-label="ctx.t('previous')"
+        :disabled="offset === 0"
+        @click="offset -= 50"
+      >
+        <ChevronLeft :size="16" aria-hidden="true" />
+      </button>
+      <span>{{ offset + 1 }}–{{ offset + items.length }} / {{ total }}</span>
+      <button
+        type="button"
+        :aria-label="ctx.t('next')"
         :disabled="offset + 50 >= total"
         @click="offset += 50"
       >
-        →
+        <ChevronRight :size="16" aria-hidden="true" />
       </button>
     </div>
-    <p v-if="error" role="alert">{{ error }}</p>
+    <p v-if="error" class="organization-error" role="alert">{{ error }}</p>
   </fieldset>
 </template>
 <style scoped>
 .organization-picker {
-  border: 1px solid currentColor;
-  border-color: color-mix(in srgb, currentColor 20%, transparent);
-  border-radius: 8px;
-  padding: 10px;
+  border: 0;
+  padding: 0;
+  margin: 0;
   min-width: 0;
   font-size: 12px;
 }
-.organization-picker legend {
-  padding: 0 4px;
-  font-weight: 500;
-}
-.organization-chips,
-.organization-search,
+.organization-selected,
 .organization-options {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 6px;
-  margin-top: 6px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.organization-selected {
+  max-height: 112px;
+  margin-bottom: 12px;
+}
+.organization-picker button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.organization-picker button svg {
+  flex-shrink: 0;
+}
+.organization-picker button:hover {
+  color: var(--paper);
+  background: color-mix(in srgb, var(--mint) 7%, transparent);
+}
+.organization-picker button[aria-pressed="true"],
+.organization-picker .organization-chip {
+  color: var(--mint);
+  background: color-mix(in srgb, var(--mint) 10%, transparent);
+  border-color: color-mix(in srgb, var(--mint) 25%, transparent);
+}
+.organization-search {
+  display: flex;
+  gap: 8px;
 }
 .organization-search input {
   flex: 1;
-  min-width: 80px;
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-  border-radius: 4px;
-  padding: 6px;
-  background: transparent;
-  color: inherit;
+  min-width: 0;
+  width: 0;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--paper);
 }
-.organization-picker button {
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-  border-radius: 4px;
-  padding: 4px 7px;
-  cursor: pointer;
-  text-align: left;
-  overflow-wrap: anywhere;
+.organization-search input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
 }
-.organization-picker button[aria-pressed="true"],
-.organization-chips button {
-  background: color-mix(in srgb, currentColor 12%, transparent);
-}
-.organization-picker button:disabled {
-  opacity: 0.5;
-  cursor: default;
+.organization-search button {
+  flex-shrink: 0;
 }
 .organization-options {
-  max-height: 96px;
-  overflow-y: auto;
+  max-height: 192px;
+  margin-top: 12px;
 }
-.organization-picker p {
-  margin-top: 6px;
+.organization-options button {
+  justify-content: flex-start;
+}
+.organization-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.organization-status,
+.organization-error {
+  margin-top: 10px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.organization-status {
+  color: var(--muted);
+}
+.organization-error {
+  color: #ffbbb0;
+}
+@media (pointer: coarse) {
+  .organization-picker button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .organization-search input {
+    font-size: 16px;
+  }
 }
 </style>

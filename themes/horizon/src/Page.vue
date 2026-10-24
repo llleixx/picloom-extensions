@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import OrganizationPicker from "./OrganizationPicker.vue";
+import OrganizationControls from "./OrganizationControls.vue";
+import CopySettings from "./CopySettings.vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   ArrowUpRight,
@@ -276,15 +277,8 @@ onUnmounted(() => {
           <template v-if="state.page === 'home'">
             <p class="hz-panel-intro">{{ ctx.t("uploadIntro") }}</p>
             <div
-              class="hz-drop"
-              :class="{ 'is-dragging': drag, 'is-disabled': !profile }"
-              role="button"
-              tabindex="0"
-              :aria-label="ctx.t('choose')"
-              :aria-disabled="!profile"
-              @click="profile && input?.click()"
-              @keydown.enter.self.prevent="profile && input?.click()"
-              @keydown.space.self.prevent="profile && input?.click()"
+              class="hz-dropzone"
+              :class="{ 'is-dragging': drag }"
               @dragover.prevent="drag = true"
               @dragleave.prevent="drag = false"
               @drop.prevent="
@@ -292,62 +286,81 @@ onUnmounted(() => {
                 files($event.dataTransfer?.files);
               "
             >
-              <div class="hz-upload-mark">
-                <Upload :size="27" :stroke-width="1.3" />
+              <div class="hz-copy-settings">
+                <CopySettings
+                  :format="state.copy.format"
+                  :formats="state.copy.formats"
+                  :auto="state.copy.auto"
+                  :t="ctx.t"
+                  @change="
+                    (format, auto) => ctx.links.setPreferences(format, auto)
+                  "
+                />
               </div>
-              <strong>{{ ctx.t("drop") }}</strong
-              ><span>{{ ctx.t("paste") }}</span>
-              <span class="hz-choose"
-                >{{ ctx.t("choose") }}<ArrowUpRight :size="16"
-              /></span>
-              <input
-                ref="input"
-                type="file"
-                accept="image/*"
-                multiple
-                hidden
-                @click.stop
-                @change="
-                  files(input?.files);
-                  if (input) input.value = '';
-                "
-              />
-            </div>
-            <div class="hz-profile">
-              <label for="hz-profile">{{ ctx.t("profile") }}</label
-              ><select
-                id="hz-profile"
-                :value="state.selectedProfileId"
-                @change="
-                  ctx.selectProfile(($event.target as HTMLSelectElement).value)
-                "
+              <div
+                class="hz-drop"
+                :class="{ 'is-disabled': !profile }"
+                role="button"
+                tabindex="0"
+                :aria-label="ctx.t('choose')"
+                :aria-disabled="!profile"
+                @click="profile && input?.click()"
+                @keydown.enter.self.prevent="profile && input?.click()"
+                @keydown.space.self.prevent="profile && input?.click()"
               >
-                <option disabled value="">
-                  {{ ctx.t(state.loading ? "loading" : "selectProfile") }}
-                </option>
-                <option
-                  v-for="p in state.profiles"
-                  :key="p.id"
-                  :value="p.id"
-                  :disabled="!p.available"
-                >
-                  {{ p.name
-                  }}{{
-                    !p.available
-                      ? " · " + (p.reason || ctx.t("unavailable"))
-                      : ""
-                  }}
-                </option>
-              </select>
+                <div class="hz-upload-mark">
+                  <Upload :size="27" :stroke-width="1.3" />
+                </div>
+                <strong>{{ ctx.t("drop") }}</strong
+                ><span>{{ ctx.t("paste") }}</span>
+                <span class="hz-choose"
+                  >{{ ctx.t("choose") }}<ArrowUpRight :size="16"
+                /></span>
+                <input
+                  ref="input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  @click.stop
+                  @change="
+                    files(input?.files);
+                    if (input) input.value = '';
+                  "
+                />
+              </div>
             </div>
-            <details v-if="state.user" class="hz-organization">
-              <summary>{{ ctx.t("organization.title") }}</summary>
-              <OrganizationPicker
-                :context="ctx"
-                kind="tags"
-              /><OrganizationPicker :context="ctx" kind="collections" />
-              <p class="hz-help">{{ ctx.t("organization.queueHint") }}</p>
-            </details>
+            <OrganizationControls :context="ctx" :signed-in="!!state.user">
+              <template #profile>
+                <select
+                  class="hz-profile"
+                  :aria-label="ctx.t('profile')"
+                  :value="state.selectedProfileId"
+                  @change="
+                    ctx.selectProfile(
+                      ($event.target as HTMLSelectElement).value,
+                    )
+                  "
+                >
+                  <option disabled value="">
+                    {{ ctx.t(state.loading ? "loading" : "selectProfile") }}
+                  </option>
+                  <option
+                    v-for="p in state.profiles"
+                    :key="p.id"
+                    :value="p.id"
+                    :disabled="!p.available"
+                  >
+                    {{ p.name
+                    }}{{
+                      !p.available
+                        ? " · " + (p.reason || ctx.t("unavailable"))
+                        : ""
+                    }}
+                  </option>
+                </select>
+              </template>
+            </OrganizationControls>
             <p v-if="state.error" class="hz-error" role="alert">
               {{ state.error }}
               <button @click="ctx.refresh()">{{ ctx.t("retry") }}</button>
@@ -379,36 +392,6 @@ onUnmounted(() => {
                 <ArrowRight :size="18" />
               </button>
             </form>
-            <details class="hz-options">
-              <summary>{{ ctx.t("options") }}</summary>
-              <div>
-                <select
-                  :aria-label="ctx.t('copyFormat')"
-                  :value="state.copy.format"
-                  @change="
-                    ctx.links.setPreferences(
-                      ($event.target as HTMLSelectElement).value,
-                      state.copy.auto,
-                    )
-                  "
-                >
-                  <option v-for="format in state.copy.formats" :key="format">
-                    {{ format }}
-                  </option></select
-                ><label
-                  ><input
-                    type="checkbox"
-                    :checked="state.copy.auto"
-                    @change="
-                      ctx.links.setPreferences(
-                        state.copy.format,
-                        ($event.target as HTMLInputElement).checked,
-                      )
-                    "
-                  />{{ ctx.t("autoCopy") }}</label
-                >
-              </div>
-            </details>
             <div
               v-if="state.uploads.length"
               class="hz-queue"
