@@ -54,10 +54,16 @@ const enabled = process.env.TENCENT_LIVE === "1";
         const result = await runtime.execute(
           {
             operationId: "live-test",
-            fileId: crypto.randomUUID(),
+            record: {
+              id: crypto.randomUUID(),
+              createdAt: 1,
+              origin: { kind: "upload" as const, userId: null },
+              ownerId: null,
+              organization: { tags: [], collections: [] },
+            },
             url: "http://localhost/unused",
             publicPath: "/unused",
-            currentStatus: "pass" as const,
+            currentDisposition: "pass" as const,
             previousResults: [],
             file: {
               metadata: {
@@ -75,10 +81,26 @@ const enabled = process.env.TENCENT_LIVE === "1";
             signal: new AbortController().signal,
             requestId: "live-test",
             data: pipelineData(),
+            organization: {
+              async listTags() {
+                return { items: [], total: 0 };
+              },
+              async listCollections() {
+                return { items: [], total: 0 };
+              },
+              async ensureTag() {
+                throw Error("Unexpected create");
+              },
+              async ensureCollection() {
+                throw Error("Unexpected create");
+              },
+            },
             log() {},
           },
         );
-        expect(["pass", "block", "delete"]).toContain(result.status);
+        expect(["pass", "block", "delete"]).toContain(
+          result.disposition!.value,
+        );
         expect(typeof result.details?.requestId).toBe("string");
         expect(["Pass", "Review", "Block"]).toContain(
           String(result.details?.suggestion),

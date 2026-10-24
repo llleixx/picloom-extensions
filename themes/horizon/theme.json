@@ -232,7 +232,13 @@
       "settings.backgrounds.name.title": "Scene name",
       "settings.backgrounds.tone.title": "Accent palette",
       "settings.backgrounds.tone.day": "Day",
-      "settings.backgrounds.tone.night": "Night"
+      "settings.backgrounds.tone.night": "Night",
+      "organization.title": "Tags & collections",
+      "organization.tags": "Tags",
+      "organization.collections": "Collections",
+      "organization.search": "Search or enter a name",
+      "organization.create": "Create",
+      "organization.queueHint": "Selections are fixed when each image enters the queue."
     },
     "zh-CN": {
       "navigation": "导航",
@@ -302,7 +308,13 @@
       "settings.backgrounds.name.title": "场景名称",
       "settings.backgrounds.tone.title": "强调色配色",
       "settings.backgrounds.tone.day": "浅色",
-      "settings.backgrounds.tone.night": "夜色"
+      "settings.backgrounds.tone.night": "夜色",
+      "organization.title": "标签与集合",
+      "organization.tags": "标签",
+      "organization.collections": "集合",
+      "organization.search": "搜索或输入名称",
+      "organization.create": "创建",
+      "organization.queueHint": "每张图片保留入队时的归类选择。"
     }
   },
   "preview": "assets/cloud-sea.webp",

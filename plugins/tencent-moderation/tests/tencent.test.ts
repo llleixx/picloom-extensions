@@ -119,10 +119,16 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
     });
     const input = {
       operationId: "task:step",
-      fileId: "file-id",
+      record: {
+        id: "file-id",
+        createdAt: 1,
+        origin: { kind: "upload" as const, userId: null },
+        ownerId: null,
+        organization: { tags: [], collections: [] },
+      },
       url: "http://localhost/i/test.png",
       publicPath: "/i/test.png",
-      currentStatus: "pass" as const,
+      currentDisposition: "pass" as const,
       previousResults: [],
       file: {
         metadata: {
@@ -140,6 +146,20 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
       signal: new AbortController().signal,
       requestId: "test",
       data: pipelineData(),
+      organization: {
+        async listTags() {
+          return { items: [], total: 0 };
+        },
+        async listCollections() {
+          return { items: [], total: 0 };
+        },
+        async ensureTag() {
+          throw Error("Unexpected create");
+        },
+        async ensureCollection() {
+          throw Error("Unexpected create");
+        },
+      },
       log() {},
     };
     try {
@@ -150,7 +170,7 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
       ] as const) {
         suggestion = value!;
         const result = await runtime.execute(input, ctx);
-        expect(result.status).toBe(action);
+        expect(result.disposition!.value).toBe(action);
         expect(result.details).toMatchObject({
           suggestion,
           label: "Porn",
@@ -197,7 +217,7 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
           },
           ctx,
         ),
-      ).resolves.toMatchObject({ status: "delete" });
+      ).resolves.toMatchObject({ disposition: { value: "delete" } });
       const before = calls;
       const controller = new AbortController();
       controller.abort();
@@ -263,9 +283,15 @@ test("Tencent URL mode submits only the public URL without reading or resolving 
       const result = await runtime.execute(
         {
           operationId: "task:step",
-          fileId: "file-id",
+          record: {
+            id: "file-id",
+            createdAt: 1,
+            origin: { kind: "upload" as const, userId: null },
+            ownerId: null,
+            organization: { tags: [], collections: [] },
+          },
           publicPath: "/i/image%20name.svg",
-          currentStatus: "pass" as const,
+          currentDisposition: "pass" as const,
           previousResults: [],
           url: "https://images.example.com/i/image%20name.svg",
           file: {
@@ -284,10 +310,24 @@ test("Tencent URL mode submits only the public URL without reading or resolving 
           signal: new AbortController().signal,
           requestId: "test",
           data: pipelineData(),
+          organization: {
+            async listTags() {
+              return { items: [], total: 0 };
+            },
+            async listCollections() {
+              return { items: [], total: 0 };
+            },
+            async ensureTag() {
+              throw Error("Unexpected create");
+            },
+            async ensureCollection() {
+              throw Error("Unexpected create");
+            },
+          },
           log() {},
         },
       );
-      expect(result.status).toBe("pass");
+      expect(result.disposition!.value).toBe("pass");
       expect(calls).toBe(1);
     } finally {
       await runtime.dispose?.();
@@ -335,10 +375,16 @@ test("content size limits reject declared and streamed oversize without contacti
       cancelled = false;
     const input = {
       operationId: "test",
-      fileId: "file",
+      record: {
+        id: "file",
+        createdAt: 1,
+        origin: { kind: "upload" as const, userId: null },
+        ownerId: null,
+        organization: { tags: [], collections: [] },
+      },
       url: "https://example.com/image",
       publicPath: "/image",
-      currentStatus: "pass" as const,
+      currentDisposition: "pass" as const,
       previousResults: [],
       file: {
         metadata: {
@@ -368,6 +414,20 @@ test("content size limits reject declared and streamed oversize without contacti
       requestId: "test",
       log() {},
       data: pipelineData(),
+      organization: {
+        async listTags() {
+          return { items: [], total: 0 };
+        },
+        async listCollections() {
+          return { items: [], total: 0 };
+        },
+        async ensureTag() {
+          throw Error("Unexpected create");
+        },
+        async ensureCollection() {
+          throw Error("Unexpected create");
+        },
+      },
     };
     try {
       await expect(runtime.execute(input, ctx)).rejects.toMatchObject({

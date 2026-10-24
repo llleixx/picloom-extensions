@@ -316,7 +316,7 @@ export const tencentModeration: Definition<"processor"> = {
               signal.throwIfAborted();
               const body = JSON.stringify({
                 BizType: config.bizType,
-                DataId: input.fileId,
+                DataId: input.record.id,
                 ...(config.submissionMode === "url"
                   ? { FileUrl: input.url }
                   : {
@@ -405,12 +405,14 @@ export const tencentModeration: Definition<"processor"> = {
                 return label;
               });
             return {
-              status:
-                result.Suggestion === "Pass"
-                  ? "pass"
-                  : result.Suggestion === "Review"
-                    ? "block"
-                    : (config.blockAction as "block" | "delete"),
+              disposition: {
+                value:
+                  result.Suggestion === "Pass"
+                    ? "pass"
+                    : result.Suggestion === "Review"
+                      ? "block"
+                      : (config.blockAction as "block" | "delete"),
+              },
               details,
             };
           },

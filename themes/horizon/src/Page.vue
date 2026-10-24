@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import OrganizationPicker from "./OrganizationPicker.vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   ArrowUpRight,
@@ -339,6 +340,14 @@ onUnmounted(() => {
                 </option>
               </select>
             </div>
+            <details v-if="state.user" class="hz-organization">
+              <summary>{{ ctx.t("organization.title") }}</summary>
+              <OrganizationPicker
+                :context="ctx"
+                kind="tags"
+              /><OrganizationPicker :context="ctx" kind="collections" />
+              <p class="hz-help">{{ ctx.t("organization.queueHint") }}</p>
+            </details>
             <p v-if="state.error" class="hz-error" role="alert">
               {{ state.error }}
               <button @click="ctx.refresh()">{{ ctx.t("retry") }}</button>
