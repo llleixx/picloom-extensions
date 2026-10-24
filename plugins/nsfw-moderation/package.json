@@ -10,8 +10,8 @@
     "test": "bun run prepare:worker && bun test tests"
   },
   "devDependencies": {
-    "@picloom/plugin-sdk": "0.1.1",
-    "@picloom/plugin-tools": "0.1.1",
+    "@picloom/plugin-sdk": "0.2.0",
+    "@picloom/plugin-tools": "0.1.2",
     "@types/bun": "1.3.10",
     "fflate": "0.8.3",
     "sharp": "0.34.5",
