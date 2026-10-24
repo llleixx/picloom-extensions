@@ -1,15 +1,6 @@
 name: Prepare draft Release
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: New release tag
-        required: true
-        type: string
-      extensions:
-        description: Space-separated extension paths (empty selects all)
-        required: false
-        type: string
 permissions:
   contents: read
 concurrency:
@@ -35,5 +26,3 @@ jobs:
       - run: bun scripts/release.ts
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.tag }}
-          EXTENSIONS: ${{ inputs.extensions }}
