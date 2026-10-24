@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "types": ["bun"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "plugin.json", "scripts/**/*.ts"]
+}

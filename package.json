@@ -10,7 +10,7 @@
   "scripts": {
     "build": "bun scripts/build.ts",
     "typecheck": "bun scripts/check.ts && tsc --noEmit",
-    "test": "bun test plugins",
+    "test": "bun run --cwd plugins/nsfw-moderation prepare:worker && bun test plugins",
     "release:prepare": "bun scripts/release.ts"
   },
   "devDependencies": {

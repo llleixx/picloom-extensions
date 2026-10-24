@@ -2,7 +2,7 @@
 
 [English](README.md) · **简体中文**
 
-本仓库维护可选插件 OpenList、NodeImage、Telegram 存储、腾讯云审核，以及 Horizon 主题。主程序保留默认主题与必要内置插件，SDK、工具和脚手架位于独立的 `picloom-tooling` 仓库；Telegram 通知仍在主仓库。
+本仓库维护可选插件 OpenList、NodeImage、Telegram 存储、腾讯云审核、本地 NSFW 审核，以及 Horizon 主题。主程序保留默认主题与必要内置插件，SDK、工具和脚手架位于独立的 `picloom-tooling` 仓库；Telegram 通知仍在主仓库。
 
 ## 扩展列表
 
@@ -12,6 +12,7 @@
 | NodeImage 存储 | `picloom.nodeimage` | [配置与限制](plugins/nodeimage/README.zh-CN.md) |
 | Telegram 存储 | `picloom.telegram-storage` | [配置与限制](plugins/telegram-storage/README.zh-CN.md) |
 | 腾讯云图片审核 | `picloom.tencent-moderation` | [配置与限制](plugins/tencent-moderation/README.zh-CN.md) |
+| 本地 NSFW 审核 | `picloom.nsfw-moderation` | [配置与限制](plugins/nsfw-moderation/README.zh-CN.md) |
 | Horizon 主题 | `picloom.horizon` | [使用与开发](themes/horizon/README.md) · [素材来源](themes/horizon/DESIGN.md) |
 
 ## 获取与安装
@@ -26,7 +27,7 @@
 bun install --frozen-lockfile
 bun run typecheck
 bun run build
-bun test plugins
+bun run test
 ```
 
 类型检查和构建分别执行，构建不再重复检查类型。插件统一调用 `@picloom/plugin-tools`，根命令从 workspace 目录发现扩展。

@@ -8,6 +8,7 @@ Optional official plugins and themes. Install individual ZIPs using Picloom plug
 | NodeImage storage  | [English](plugins/nodeimage/README.md) · [中文](plugins/nodeimage/README.zh-CN.md)                   |
 | Telegram storage   | [English](plugins/telegram-storage/README.md) · [中文](plugins/telegram-storage/README.zh-CN.md)     |
 | Tencent moderation | [English](plugins/tencent-moderation/README.md) · [中文](plugins/tencent-moderation/README.zh-CN.md) |
+| Local NSFW moderation | [English](plugins/nsfw-moderation/README.md) · [中文](plugins/nsfw-moderation/README.zh-CN.md) |
 | Horizon theme      | [Usage and development](themes/horizon/README.md) · [Image provenance](themes/horizon/DESIGN.md) |
 
 ## Get and install
@@ -22,7 +23,7 @@ Use Bun 1.4.4. SDKs and tools use exact npm versions; no sibling tooling checkou
 bun install --frozen-lockfile
 bun run typecheck
 bun run build
-bun test plugins
+bun run test
 ```
 
 Type checking and building are separate commands; builds do not repeat type checks. Plugin packages use the shared `@picloom/plugin-tools` CLI, and the root commands discover extensions from the workspace directories.
