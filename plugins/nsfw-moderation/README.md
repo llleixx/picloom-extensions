@@ -2,51 +2,45 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Review saved images for pornography, pornographic illustrations and optional suggestive content using the bundled NSFWJS MobileNetV2 model. Inference runs on the Picloom server's CPU without a GPU, external service or credentials. Runtime inference neither downloads models nor sends images to third parties.
+Review pornography, pornographic illustrations and optional suggestive content on the server CPU using the bundled NSFWJS MobileNetV2 model. No GPU, external service or credentials are needed. Runtime inference neither downloads models nor sends images to third parties.
 
 `picloom.nsfw-moderation` · `processor` · `post_save`
 
-## Install and use
+## Get started
 
-Upload the plugin ZIP in plugin management, create a configuration, and add it to the post-save pipeline used by your upload profile. Place notification plugins, such as Telegram Notification, after this step. Review results in the image details. Matches block access by default; deletion is optional.
+[Install the ZIP (中文)](https://llleixx.github.io/picloom/guide/plugins.html), add this plugin to a post-save pipeline in **Configuration → Pipelines**, select categories, threshold and action, then connect the pipeline to an upload profile.
 
-| Setting                            | Default          | Values                                                                                                    |
-| ---------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
-| Categories `categories`            | `Porn`, `Hentai` | Pornography and pornographic illustrations; optionally `Sexy` for suggestive content; select at least one |
-| Threshold `threshold`              | `0.8`            | Greater than 0 and at most 1, shared by selected categories                                               |
-| On match `blockAction`             | `block`          | `block` or `delete`                                                                                       |
-| Maximum sampled frames `maxFrames` | `5`              | 1–10; 1 checks only the first frame                                                                       |
-| Content size limit `maxContentMiB` | `20`             | Advanced, 1–100 MiB                                                                                       |
-| Timeout `timeoutMs`                | `30000`          | Advanced, 1000–120000 milliseconds                                                                        |
+Upload a test image and check its review result in image details. Matches block access by default; deletion is optional. Place notification plugins after moderation.
 
-A match occurs when any selected category reaches the threshold in any reviewed frame. Scores from different categories are not added together. The default threshold is a starting configuration, not an accuracy guarantee; adjust it based on false positives and missed detections in your images. `Sexy` is off by default; enabling it may also match swimwear or portrait photography.
+## Configuration
 
-This is post-save moderation: images may already be accessible before review completes. A passing result never reverses an existing block or delete decision. Installing the plugin or changing configuration does not automatically review previously completed images.
+| Field | Meaning | Required | Default | Constraints |
+| --- | --- | --- | --- | --- |
+| `categories` | Categories | Yes | `Porn`, `Hentai` | Pornography and pornographic illustrations; optionally `Sexy` for suggestive content; select at least one |
+| `threshold` | Match threshold | Yes | `0.8` | Greater than 0 and at most 1, shared by selected categories |
+| `blockAction` | On match | Yes | `block` | `block` or `delete` |
+| `maxFrames` | Maximum sampled frames | Yes | `5` | 1–10; 1 checks only the first frame |
+| `maxContentMiB` | Content size limit, MiB | Yes | `20` | Advanced, 1–100 |
+| `timeoutMs` | Timeout, ms | Yes | `30000` | Advanced, 1000–120000 |
 
-## Images and results
+## Behavior and limitations
 
-The plugin uses Picloom's Sharp to decode JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG; actual decoding support depends on the host. The per-frame limit is 40 million pixels. Before inference, orientation is corrected, transparency is flattened onto white, and pixels are converted to a 224×224 sRGB image. Stored originals remain unchanged. SVG review covers only the static rasterized image.
+Any selected category reaching the threshold in any sampled frame is a match. Scores are not added together. The threshold is not an accuracy guarantee; adjust it based on false positives and missed detections. Enabling `Sexy` may also match swimwear or portrait photography. A passing result from this plugin never reverses an existing block or delete decision. See the [post-save pipeline guide (中文)](https://llleixx.github.io/picloom/guide/pipelines.html) for public access timing, cumulative dispositions and when configuration changes take effect.
 
-Multi-frame images are sampled evenly by frame index, including the first and last frames. Images with fewer frames than the limit are reviewed in full. For example, 21 frames with a limit of 5 selects frames 1, 6, 11, 16 and 21. Frame duration does not affect selection, and unsampled frames are not reviewed. More samples require more CPU time.
+Static images are reviewed once. Multi-frame images, such as GIF and animated WebP, are sampled evenly by frame index, including the first and last frames. Images with fewer frames than the limit are reviewed in full. For example, 21 frames with a limit of 5 selects frames 1, 6, 11, 16 and 21. Frame duration does not affect selection; unsampled frames are not reviewed. More samples require more CPU time.
 
-The summary contains the model, selected categories, threshold, maximum scores per category, matched categories, total frames and sampled frame count. Maxima may come from different frames and are not a single probability distribution. `Drawing` and `Neutral` are shown for context and do not trigger moderation decisions.
+Format support depends on the host's Sharp decoder. Each frame is limited to 40 million pixels. Orientation is corrected, transparency flattened onto white, and pixels converted to 224×224 sRGB for inference; stored originals remain unchanged. SVG review covers only the static image.
 
-Oversized files, decoding failures, model loading failures, invalid output and timeouts record a task error. They are neither passing reviews nor automatic blocks, and are not automatically retried. Unexpected worker exits allow retries under the host's task rules; storage read errors retain the host's retry behavior. After resolving the cause, use the existing task retry action.
+The summary records the model, categories, threshold, maximum scores per category, matched categories, total frames and sampled frame count. Maxima may come from different frames; `Drawing` and `Neutral` are informational and do not trigger decisions.
 
-Each runtime instance reviews files serially and reuses its model, loading it on the first execution. Timeout starts after acquiring an execution slot and includes model loading, file reading, decoding and inference; queue time is excluded. File deletion or instance disposal cancels the associated execution. Later executions can load a fresh model.
+Oversized files, unsupported formats, decoding or model loading failures, invalid output and timeouts record task errors. They neither pass moderation nor automatically block access or retry. Unexpected worker exits and storage read errors retain the host's retry rules; after resolving the cause, use the task retry action.
+
+Each instance reviews images serially and reuses its model, loading it on first execution. Timeout covers model loading, reading, decoding and inference, excluding queue time. File deletion or instance disposal cancels the associated execution; later executions can load a fresh model.
 
 ## Development
 
-Use the repository's Bun version. Install dependencies from the repository root, then run in this directory:
+Shared commands are in the [repository development guide](../../README.md#development). This plugin's type checks, tests and builds first generate `.generated/worker.ts`, embedding CPU inference code and MobileNetV2 in the ZIP. Generated files are not committed; installation needs no additional npm dependencies.
 
-```sh
-bun run typecheck
-bun run test
-bun run build
-```
-
-These commands first generate `.generated/worker.ts`, embedding CPU inference code and only the MobileNetV2 model, then use the shared plugin tooling to package the plugin. The ZIP installs independently without npm dependencies on the destination server. Generated files are not committed.
-
-Tests cover decisions with simulated scores, real GIF/WebP sampling, cancellation and failure handling, and the actual model with networking disabled. They do not establish detection accuracy. Run `bun scripts/verify-package.ts` to check an already-built ZIP's independent loading, offline inference and resource release, and report local timing, memory and package sizes. With `PICLOOM_SOURCE_DIR` set, it also installs the plugin and runs the post-save pipeline using that source tree's isolated test environment, without accessing preview data.
+After building, run `bun scripts/verify-package.ts` in this directory to verify independent ZIP loading, offline inference and resource release, and report timing, memory and package sizes. Set `PICLOOM_SOURCE_DIR` to also verify installation and post-save pipelines in a temporary host without accessing preview data. Simulated scores test decisions; real-model tests check the runtime path. Neither establishes detection accuracy.
 
 The model comes from [NSFWJS](https://github.com/infinitered/nsfwjs), with inference provided by [TensorFlow.js](https://github.com/tensorflow/tfjs). The artifact's `thirdPartyNotices` export includes dependency licenses. `licenses/` retains Apache 2.0 text and the TensorFlow.js Layers dual license absent from the npm packages; the latter comes from the corresponding upstream version.

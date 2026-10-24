@@ -30,6 +30,6 @@
 
 ## 行为与限制
 
-使用固定服务 `https://api.nodeimage.com`，默认跳转到远端图片地址；关闭 `redirect` 后由 Picloom 转发内容。不支持导入已有图片。临时上传故障可重试，重试可能产生重复的远端图片。
+使用固定服务 `https://api.nodeimage.com`，默认跳转到远端图片地址；关闭 `redirect` 后由 Picloom 转发内容。不支持导入已有图片。上传中断或超时后远端可能已保存，临时故障重试可能产生重复图片。
 
-不支持远端删除。Picloom 会记录删除失败；将副本人工标记为已删除可结束对该远端图片的管理。
+不支持远端删除。Picloom 会记录删除失败；可按[图片管理说明](https://llleixx.github.io/picloom/guide/files.html)解除引用并保留历史，远端图片不会因此删除。
