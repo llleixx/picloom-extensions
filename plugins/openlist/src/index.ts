@@ -116,7 +116,7 @@ export const openListStorage: Definition<"storage"> = {
         default: 30000,
       },
     },
-    required: ["endpoint", "root", "token", "timeoutMs"],
+    required: ["endpoint", "root", "token", "redirect", "timeoutMs"],
     additionalProperties: false,
   },
 

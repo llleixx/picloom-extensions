@@ -33,7 +33,7 @@ Fields marked immutable cannot change after creation.
 | `endpoint`  | Endpoint             | Yes      | —       | immutable       |
 | `root`      | Mount directory      | Yes      | —       | immutable       |
 | `token`     | API token            | Yes      | —       | secret          |
-| `redirect`  | Redirect reads (302) | No       | `true`  | —               |
+| `redirect`  | Redirect reads (302) | Yes      | `true`  | —               |
 | `timeoutMs` | Timeout (ms)         | Yes      | `30000` | ≥ 100; ≤ 120000 |
 
 ## Behavior and limitations

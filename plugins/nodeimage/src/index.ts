@@ -83,7 +83,7 @@ export const nodeImageStorage: Definition<"storage"> = {
         default: 30000,
       },
     },
-    required: ["apiKey", "timeoutMs"],
+    required: ["apiKey", "redirect", "timeoutMs"],
     additionalProperties: false,
   },
 

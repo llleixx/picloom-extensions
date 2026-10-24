@@ -25,7 +25,7 @@ Enter a NodeImage API key and connect the source through a storage group to an u
 | Field       | Meaning              | Required | Default | Constraints     |
 | ----------- | -------------------- | -------- | ------- | --------------- |
 | `apiKey`    | API key              | Yes      | —       | secret          |
-| `redirect`  | Redirect reads (302) | No       | `true`  | —               |
+| `redirect`  | Redirect reads (302) | Yes      | `true`  | —               |
 | `timeoutMs` | Timeout (ms)         | Yes      | `30000` | ≥ 100; ≤ 120000 |
 
 ## Behavior and limitations
