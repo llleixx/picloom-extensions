@@ -12,6 +12,19 @@
 
 上传测试图片，在图片详情查看审核结果。命中后默认屏蔽，也可选择删除；需要通知时，将通知插件放在审核步骤之后。
 
+默认配置：
+
+```json
+{
+  "categories": ["Porn", "Hentai"],
+  "threshold": 0.8,
+  "blockAction": "block",
+  "maxFrames": 5,
+  "maxContentMiB": 20,
+  "timeoutMs": 30000
+}
+```
+
 ## 配置
 
 | 字段 | 含义 | 必填 | 默认值 | 约束 |

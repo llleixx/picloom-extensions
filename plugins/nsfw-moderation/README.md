@@ -12,6 +12,19 @@ Review pornography, pornographic illustrations and optional suggestive content o
 
 Upload a test image and check its review result in image details. Matches block access by default; deletion is optional. Place notification plugins after moderation.
 
+Default configuration:
+
+```json
+{
+  "categories": ["Porn", "Hentai"],
+  "threshold": 0.8,
+  "blockAction": "block",
+  "maxFrames": 5,
+  "maxContentMiB": 20,
+  "timeoutMs": 30000
+}
+```
+
 ## Configuration
 
 | Field | Meaning | Required | Default | Constraints |

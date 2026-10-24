@@ -17,7 +17,7 @@ Start with the plugin name, language links, a short description, and its ID, typ
 | Behavior and limitations | Explain supported operations, results, failures and retry behavior, and limits that affect user choices. |
 | Development (optional) | Include only plugin-specific build or verification steps; link to the root README for shared commands. |
 
-Examples are optional: include them when they clarify configuration. Keep prose concise; omit SDK internals, release procedures and temporary release status. Theme documentation need not follow this structure.
+Include a usable JSON configuration example in Get started. Use placeholders for credentials; plugins without configuration fields may omit the example. Keep prose concise; omit SDK internals, release procedures and temporary release status. Theme documentation need not follow this structure.
 
 ## Documentation ownership
 
