@@ -115,6 +115,7 @@ onUnmounted(() => {
         :key="`${item.kind}:${item.id}`"
         type="button"
         class="hz-organization-chip"
+        :class="{ 'hz-organization-chip-collection': item.kind === 'collections' }"
         :title="item.name"
         :aria-label="ctx.t('organization.remove', { name: item.name })"
         @click="picker(item.kind)?.toggle(item.id)"
@@ -230,8 +231,8 @@ onUnmounted(() => {
   gap: 5px;
   max-width: 100%;
   padding: 4px 7px;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--mint) 9%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mint) 10%, transparent);
   color: var(--mint);
   font-size: 11px;
 }
@@ -246,6 +247,13 @@ onUnmounted(() => {
 }
 .hz-organization-chip:hover {
   background: color-mix(in srgb, var(--mint) 16%, transparent);
+}
+.hz-organization-chip-collection {
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--mint) 5%, transparent);
+}
+.hz-organization-chip-collection:hover {
+  background: color-mix(in srgb, var(--mint) 10%, transparent);
 }
 .hz-organization-more {
   padding: 4px 6px;

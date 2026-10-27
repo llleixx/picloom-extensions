@@ -90,7 +90,11 @@ function focusSearch() {
 defineExpose({ selectedItems, toggle, focusSearch });
 </script>
 <template>
-  <fieldset class="organization-picker" :disabled="busy">
+  <fieldset
+    class="organization-picker"
+    :class="{ 'organization-picker-collections': kind === 'collections' }"
+    :disabled="busy"
+  >
     <div
       v-if="selectedItems.length"
       class="organization-selected"
@@ -221,6 +225,26 @@ defineExpose({ selectedItems, toggle, focusSearch });
   color: var(--mint);
   background: color-mix(in srgb, var(--mint) 10%, transparent);
   border-color: color-mix(in srgb, var(--mint) 25%, transparent);
+}
+.organization-options button,
+.organization-picker .organization-chip {
+  border-radius: 999px;
+}
+.organization-picker-collections .organization-options button,
+.organization-picker-collections .organization-chip {
+  border-radius: 5px;
+}
+.organization-picker-collections button[aria-pressed="true"],
+.organization-picker-collections .organization-chip {
+  background: color-mix(in srgb, var(--mint) 5%, transparent);
+}
+.organization-picker .organization-chip:hover,
+.organization-options button[aria-pressed="true"]:hover {
+  background: color-mix(in srgb, var(--mint) 16%, transparent);
+}
+.organization-picker-collections .organization-chip:hover,
+.organization-picker-collections .organization-options button[aria-pressed="true"]:hover {
+  background: color-mix(in srgb, var(--mint) 10%, transparent);
 }
 .organization-search {
   display: flex;
