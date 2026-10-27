@@ -15,7 +15,6 @@ import {
   ChevronRight,
   X,
   LoaderCircle,
-  Link,
 } from "lucide-vue-next";
 import type { Config, ThemeContext } from "@picloom/theme-sdk";
 const { context: ctx } = defineProps<{ context: ThemeContext }>();
@@ -67,8 +66,6 @@ const input = ref<HTMLInputElement>(),
   drag = ref(false),
   username = ref(""),
   password = ref("");
-const urlMode = ref(false),
-  remoteUrl = ref("");
 const profile = computed(() =>
   state.value.profiles.find(
     (p) => p.id === state.value.selectedProfileId && p.available,
@@ -110,22 +107,29 @@ function files(list: FileList | null | undefined) {
   if (list?.length && profile.value) ctx.uploads.add(Array.from(list));
 }
 function paste(e: ClipboardEvent) {
-  if (
-    state.value.page !== "home" ||
-    (e.target as HTMLElement)?.closest("input,textarea,[contenteditable]")
-  )
-    return;
-  if (e.clipboardData?.files.length) {
+  if (state.value.page !== "home" || !e.clipboardData) return;
+  if (e.clipboardData.files.length) {
     e.preventDefault();
     files(e.clipboardData.files);
+    return;
   }
-}
-function addUrl() {
-  const value = remoteUrl.value.trim();
-  if (!value || !profile.value) return;
-  ctx.uploads.addUrls(value.split(/\s+/));
-  remoteUrl.value = "";
-  urlMode.value = false;
+  if ((e.target as HTMLElement)?.closest("input,textarea,[contenteditable]"))
+    return;
+  const text = e.clipboardData.getData("text/plain").trim();
+  if (!text) return;
+  const urls = text.split(/\s+/);
+  if (
+    !urls.every((value) => {
+      try {
+        return ["http:", "https:"].includes(new URL(value).protocol);
+      } catch {
+        return false;
+      }
+    })
+  )
+    return;
+  e.preventDefault();
+  if (profile.value) ctx.uploads.addUrls(urls);
 }
 async function login() {
   const value = password.value;
@@ -376,22 +380,8 @@ onUnmounted(() => {
                 profile
                   ? size(profile.maxUploadBytes) + " / " + ctx.t("perFile")
                   : ctx.t("ready")
-              }}</span
-              ><button :aria-expanded="urlMode" @click="urlMode = !urlMode">
-                <Link :size="13" />{{ ctx.t("fromUrl") }}
-              </button>
+              }}</span>
             </div>
-            <form v-if="urlMode" class="hz-url" @submit.prevent="addUrl">
-              <input
-                v-model="remoteUrl"
-                type="url"
-                required
-                placeholder="https://…"
-                :aria-label="ctx.t('fromUrl')"
-              /><button :disabled="!profile" :aria-label="ctx.t('upload')">
-                <ArrowRight :size="18" />
-              </button>
-            </form>
             <div
               v-if="state.uploads.length"
               class="hz-queue"

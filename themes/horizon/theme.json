@@ -1,6 +1,6 @@
 {
   "id": "picloom.horizon",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "apiVersion": 1,
   "pages": {
     "home": {
@@ -176,7 +176,7 @@
       "upload": "Share a moment",
       "uploadIntro": "A small frame. A whole world inside.",
       "drop": "Drop your images here",
-      "paste": "or paste from your clipboard",
+      "paste": "or paste images or links from your clipboard",
       "choose": "Choose images",
       "profile": "Upload profile",
       "selectProfile": "Choose a profile",
@@ -187,7 +187,6 @@
       "guest": "Sign in to start sharing your images.",
       "perFile": "file",
       "ready": "Your next moment starts here",
-      "fromUrl": "From a link",
       "copyMode": "Copy",
       "copyFormat": "Link format",
       "autoCopy": "Auto-copy",
@@ -260,7 +259,7 @@
       "upload": "分享此刻",
       "uploadIntro": "一张图片，装下一个世界。",
       "drop": "将图片拖放到这里",
-      "paste": "也可以直接粘贴剪贴板中的图片",
+      "paste": "也可以直接粘贴图片或链接",
       "choose": "选择图片",
       "profile": "上传方案",
       "selectProfile": "选择上传方案",
@@ -271,7 +270,6 @@
       "guest": "登录后，即可开始分享你的图片。",
       "perFile": "每张",
       "ready": "下一次心动，从这里开始",
-      "fromUrl": "通过链接上传",
       "copyMode": "复制",
       "copyFormat": "链接格式",
       "autoCopy": "自动复制",

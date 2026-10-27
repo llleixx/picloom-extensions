@@ -352,14 +352,6 @@ body {
   color: var(--muted);
   margin-top: 13px;
 }
-.hz-meta button {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-.hz-meta button:hover {
-  color: var(--mint);
-}
 .hz-panel-foot {
   display: flex;
   justify-content: center;
@@ -378,15 +370,6 @@ body {
   border-radius: 50%;
   background: var(--mint);
 }
-.hz-url {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-.hz-url input {
-  flex: 1;
-  min-width: 0;
-}
 .hz-panel input:not([type="checkbox"]):not([type="file"]) {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--edge);
@@ -398,13 +381,6 @@ body {
 .hz-panel input::placeholder {
   color: var(--muted);
   opacity: 0.65;
-}
-.hz-url button {
-  width: 34px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
 }
 .hz-error,
 .hz-help {
