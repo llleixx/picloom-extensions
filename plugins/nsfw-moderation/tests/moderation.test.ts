@@ -17,43 +17,33 @@ test("category thresholds, optional Sexy and cumulative dispositions", async () 
   };
   const runtime = createRuntime(settings, services({}), classifier);
   scores = { Drawing: 0, Hentai: 0.4, Neutral: 0, Porn: 0.6, Sexy: 0 };
-  expect((await runtime.execute(source, context())).disposition).toEqual({
-    value: "pass",
-  });
+  expect((await runtime.process(source, context())).status).toBe("pass");
   scores = { Drawing: 0, Hentai: 0, Neutral: 0.2, Porn: 0.8, Sexy: 0 };
-  expect((await runtime.execute(source, context())).disposition).toEqual({
-    value: "block",
-  });
+  expect((await runtime.process(source, context())).status).toBe("block");
   scores = { Drawing: 0, Hentai: 0.8, Neutral: 0.2, Porn: 0, Sexy: 0 };
   const deletion = createRuntime(
     { ...settings, blockAction: "delete" },
     services({}),
     classifier,
   );
-  expect((await deletion.execute(source, context())).disposition).toEqual({
-    value: "delete",
-  });
+  expect((await deletion.process(source, context())).status).toBe("delete");
   scores = { Drawing: 0, Hentai: 0, Neutral: 0, Porn: 0, Sexy: 1 };
-  expect((await runtime.execute(source, context())).disposition).toEqual({
-    value: "pass",
-  });
+  expect((await runtime.process(source, context())).status).toBe("pass");
   const sexy = createRuntime(
     { ...settings, categories: ["Sexy"] },
     services({}),
     classifier,
   );
-  expect((await sexy.execute(source, context())).disposition).toEqual({
-    value: "block",
-  });
+  expect((await sexy.process(source, context())).status).toBe("block");
   // Existing decisions are accumulated by the host, never replaced.
   expect(
     (
-      await runtime.execute(
+      await runtime.process(
         { ...source, currentDisposition: "delete" },
         context(),
       )
-    ).disposition,
-  ).toEqual({ value: "pass" });
+    ).status,
+  ).toBe("pass");
   await runtime.dispose?.();
   await deletion.dispose?.();
   await sexy.dispose?.();
@@ -86,9 +76,9 @@ test("GIF and animated WebP sample non-first frames and aggregate category maxim
       },
       dispose() {},
     });
-    const result = await runtime.execute(input(file(bytes)), context());
+    const result = await runtime.process(input(file(bytes)), context());
     expect(observed).toEqual([0, 50, 100, 150, 200]);
-    expect(result.disposition).toEqual({ value: "block" });
+    expect(result.status).toBe("block");
     expect(result.details).toMatchObject({
       totalFrames: 21,
       sampledFrames: 5,
@@ -119,7 +109,7 @@ test("static images become RGB on white without changing the source", async () =
     dispose() {},
   });
   expect(
-    (await runtime.execute(input(file(bytes)), context())).details,
+    (await runtime.process(input(file(bytes)), context())).details,
   ).toMatchObject({ totalFrames: 1, sampledFrames: 1 });
   expect(bytes).toEqual(copy);
   await runtime.dispose?.();
@@ -140,24 +130,24 @@ test("oversize metadata and actual bytes, corrupt images and storage errors fail
   );
   const oversized = file(new Uint8Array(1024 ** 2 + 1));
   await expect(
-    runtime.execute(input(oversized), context()),
+    runtime.process(input(oversized), context()),
   ).rejects.toMatchObject({ code: "RESOURCE_LIMIT", retryable: false });
   const unknownSize = {
     ...oversized,
     metadata: { ...oversized.metadata, byteSize: null },
   };
   await expect(
-    runtime.execute(input(unknownSize), context()),
+    runtime.process(input(unknownSize), context()),
   ).rejects.toMatchObject({ code: "RESOURCE_LIMIT", retryable: false });
   await expect(
-    runtime.execute(
+    runtime.process(
       input(file(new TextEncoder().encode("not an image"))),
       context(),
     ),
   ).rejects.toMatchObject({ code: "INVALID_DATA", retryable: false });
   const failure = new PluginError("NETWORK", "Test storage failure", true);
   await expect(
-    runtime.execute(
+    runtime.process(
       input({
         ...file(new Uint8Array()),
         async openRead() {
@@ -192,7 +182,7 @@ test("queued cancellation does not read files; active cancellation releases the 
   });
   const source = input(file(await image()));
   const active = new AbortController();
-  const first = runtime.execute(source, context(active.signal));
+  const first = runtime.process(source, context(active.signal));
   const firstRejected = first.catch((error) => error);
   await started.promise;
   const queued = new AbortController();
@@ -203,7 +193,7 @@ test("queued cancellation does not read files; active cancellation releases the 
       return source.file.openRead();
     },
   };
-  const second = runtime.execute(input(unread), context(queued.signal));
+  const second = runtime.process(input(unread), context(queued.signal));
   const secondRejected = second.catch((error) => error);
   queued.abort("queued cancelled");
   expect(await secondRejected).toBe("queued cancelled");
@@ -211,9 +201,7 @@ test("queued cancellation does not read files; active cancellation releases the 
   expect(await firstRejected).toBe("active cancelled");
   expect(queuedReads).toBe(0);
   expect(disposed).toBe(1);
-  expect((await runtime.execute(source, context())).disposition?.value).toBe(
-    "pass",
-  );
+  expect((await runtime.process(source, context())).status).toBe("pass");
   await runtime.dispose?.();
 });
 
@@ -241,7 +229,7 @@ test("timeout is nonretryable; disposal cancels a pending read and releases its 
     classifier,
   );
   await expect(
-    timeout.execute(input(pendingFile), context()),
+    timeout.process(input(pendingFile), context()),
   ).rejects.toMatchObject({
     code: "FAILED",
     retryable: false,
@@ -249,7 +237,7 @@ test("timeout is nonretryable; disposal cancels a pending read and releases its 
   });
   expect(cancelled).toBe(1);
   const runtime = createRuntime(settings, services({}), classifier);
-  const execution = runtime.execute(input(pendingFile), context());
+  const execution = runtime.process(input(pendingFile), context());
   const rejected = execution.catch((error) => error);
   await Bun.sleep(5);
   await runtime.dispose?.();

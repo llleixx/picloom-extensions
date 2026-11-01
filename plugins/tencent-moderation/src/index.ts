@@ -296,7 +296,7 @@ export const tencentModeration: Definition<"processor"> = {
 
       async createInstance({ config, services }) {
         return {
-          async execute(input, ctx) {
+          async process(input, ctx) {
             ctx.signal.throwIfAborted();
             if (
               config.submissionMode === "url" &&
@@ -405,14 +405,12 @@ export const tencentModeration: Definition<"processor"> = {
                 return label;
               });
             return {
-              disposition: {
-                value:
-                  result.Suggestion === "Pass"
-                    ? "pass"
-                    : result.Suggestion === "Review"
-                      ? "block"
-                      : (config.blockAction as "block" | "delete"),
-              },
+              status:
+                result.Suggestion === "Pass"
+                  ? "pass"
+                  : result.Suggestion === "Review"
+                    ? "block"
+                    : (config.blockAction as "block" | "delete"),
               details,
             };
           },

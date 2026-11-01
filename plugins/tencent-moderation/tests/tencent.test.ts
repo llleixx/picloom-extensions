@@ -130,6 +130,10 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
       publicPath: "/i/test.png",
       currentDisposition: "pass" as const,
       previousResults: [],
+      limits: { maxDimension: 20000, maxPixels: 40000000 },
+      async createOutput() {
+        throw new Error("Unexpected image replacement");
+      },
       file: {
         metadata: {
           mimeType: "image/png",
@@ -169,8 +173,8 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
         ["Block", "delete"],
       ] as const) {
         suggestion = value!;
-        const result = await runtime.execute(input, ctx);
-        expect(result.disposition!.value).toBe(action);
+        const result = await runtime.process(input, ctx);
+        expect(result.status).toBe(action);
         expect(result.details).toMatchObject({
           suggestion,
           label: "Porn",
@@ -188,7 +192,7 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
       ] as const) {
         code = value;
         try {
-          await runtime.execute(input, ctx);
+          await runtime.process(input, ctx);
           throw Error("Expected failure");
         } catch (error) {
           expect(error).toBeInstanceOf(PluginError);
@@ -197,14 +201,14 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
       }
       code = "";
       malformed = true;
-      await expect(runtime.execute(input, ctx)).rejects.toMatchObject({
+      await expect(runtime.process(input, ctx)).rejects.toMatchObject({
         code: "INVALID_DATA",
         retryable: false,
       });
       malformed = false;
       expectedBytes = Buffer.alloc(8 * 1024 * 1024, 1);
       await expect(
-        runtime.execute(
+        runtime.process(
           {
             ...input,
             file: {
@@ -217,12 +221,12 @@ test("Tencent Cloud signs file submissions, maps decisions, stores safe summarie
           },
           ctx,
         ),
-      ).resolves.toMatchObject({ disposition: { value: "delete" } });
+      ).resolves.toMatchObject({ status: "delete" });
       const before = calls;
       const controller = new AbortController();
       controller.abort();
       await expect(
-        runtime.execute(input, { ...ctx, signal: controller.signal }),
+        runtime.process(input, { ...ctx, signal: controller.signal }),
       ).rejects.toBeDefined();
       expect(calls).toBe(before);
     } finally {
@@ -280,7 +284,7 @@ test("Tencent URL mode submits only the public URL without reading or resolving 
       ),
     });
     try {
-      const result = await runtime.execute(
+      const result = await runtime.process(
         {
           operationId: "task:step",
           record: {
@@ -293,6 +297,10 @@ test("Tencent URL mode submits only the public URL without reading or resolving 
           publicPath: "/i/image%20name.svg",
           currentDisposition: "pass" as const,
           previousResults: [],
+          limits: { maxDimension: 20000, maxPixels: 40000000 },
+          async createOutput() {
+            throw new Error("Unexpected image replacement");
+          },
           url: "https://images.example.com/i/image%20name.svg",
           file: {
             metadata: {
@@ -327,7 +335,7 @@ test("Tencent URL mode submits only the public URL without reading or resolving 
           log() {},
         },
       );
-      expect(result.disposition!.value).toBe("pass");
+      expect(result.status).toBe("pass");
       expect(calls).toBe(1);
     } finally {
       await runtime.dispose?.();
@@ -386,6 +394,10 @@ test("content size limits reject declared and streamed oversize without contacti
       publicPath: "/image",
       currentDisposition: "pass" as const,
       previousResults: [],
+      limits: { maxDimension: 20000, maxPixels: 40000000 },
+      async createOutput() {
+        throw new Error("Unexpected image replacement");
+      },
       file: {
         metadata: {
           mimeType: "image/png",
@@ -430,13 +442,13 @@ test("content size limits reject declared and streamed oversize without contacti
       },
     };
     try {
-      await expect(runtime.execute(input, ctx)).rejects.toMatchObject({
+      await expect(runtime.process(input, ctx)).rejects.toMatchObject({
         code: "RESOURCE_LIMIT",
         retryable: false,
       });
       expect(opens).toBe(0);
       input.file.metadata.byteSize = null;
-      await expect(runtime.execute(input, ctx)).rejects.toMatchObject({
+      await expect(runtime.process(input, ctx)).rejects.toMatchObject({
         code: "RESOURCE_LIMIT",
         retryable: false,
       });

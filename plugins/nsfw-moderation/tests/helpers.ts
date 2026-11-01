@@ -33,7 +33,7 @@ export function file(bytes: Uint8Array): FileInput {
 }
 export function input(
   source: FileInput,
-): Parameters<PostSavePlugin["execute"]>[0] {
+): Parameters<PostSavePlugin["process"]>[0] {
   return {
     operationId: "task:step",
     record: {
@@ -47,12 +47,16 @@ export function input(
     publicPath: "/i/test",
     currentDisposition: "pass",
     previousResults: [],
+    limits: { maxDimension: 20000, maxPixels: 40000000 },
+    async createOutput() {
+      throw new Error("Unexpected image replacement");
+    },
     file: source,
   };
 }
 export function context(
   signal = new AbortController().signal,
-): Parameters<PostSavePlugin["execute"]>[1] {
+): Parameters<PostSavePlugin["process"]>[1] {
   return {
     signal,
     requestId: "test",

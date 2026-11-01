@@ -111,7 +111,7 @@ export function createRuntime(
   let active: Promise<void> = Promise.resolve();
   const sharp = services.images.sharp;
   return {
-    async execute(input, ctx) {
+    async process(input, ctx) {
       const cancellation = AbortSignal.any([ctx.signal, lifetime.signal]);
       const release = await gate.acquire(cancellation);
       const idle = Promise.withResolvers<void>();
@@ -201,9 +201,7 @@ export function createRuntime(
           sampledFrames: indices.length,
         };
         return {
-          disposition: {
-            value: matchedCategories.length ? config.blockAction : "pass",
-          },
+          status: matchedCategories.length ? config.blockAction : "pass",
           details,
         };
       } catch (error) {

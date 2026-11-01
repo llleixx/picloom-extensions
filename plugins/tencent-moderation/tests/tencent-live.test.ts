@@ -51,7 +51,7 @@ const enabled = process.env.TENCENT_LIVE === "1";
         })
           .png()
           .toBuffer();
-        const result = await runtime.execute(
+        const result = await runtime.process(
           {
             operationId: "live-test",
             record: {
@@ -65,6 +65,10 @@ const enabled = process.env.TENCENT_LIVE === "1";
             publicPath: "/unused",
             currentDisposition: "pass" as const,
             previousResults: [],
+            limits: { maxDimension: 20000, maxPixels: 40000000 },
+            async createOutput() {
+              throw new Error("Unexpected image replacement");
+            },
             file: {
               metadata: {
                 mimeType: "image/png",
@@ -98,9 +102,7 @@ const enabled = process.env.TENCENT_LIVE === "1";
             log() {},
           },
         );
-        expect(["pass", "block", "delete"]).toContain(
-          result.disposition!.value,
-        );
+        expect(["pass", "block", "delete"]).toContain(result.status);
         expect(typeof result.details?.requestId).toBe("string");
         expect(["Pass", "Review", "Block"]).toContain(
           String(result.details?.suggestion),

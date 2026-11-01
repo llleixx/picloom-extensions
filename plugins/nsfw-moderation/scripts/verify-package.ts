@@ -45,7 +45,7 @@ assert(thirdPartyNotices.includes("Apache License"));
 const config = ${JSON.stringify(settings)};
 const png = await sharp({create:{width:40,height:20,channels:3,background:"#808080"}}).png().toBuffer();
 const file = {metadata:{mimeType:"image/png",byteSize:png.length,width:40,height:20},async openRead(){return new Blob([png]).stream()}};
-const input = {operationId:"verification:step",record:{id:"file",createdAt:1,origin:{kind:"upload",userId:null},ownerId:null,organization:{tags:[],collections:[]}},url:"/image.png",publicPath:"/image.png",currentDisposition:"pass",previousResults:[],file};
+const input = {operationId:"verification:step",record:{id:"file",createdAt:1,origin:{kind:"upload",userId:null},ownerId:null,organization:{tags:[],collections:[]}},url:"/image.png",publicPath:"/image.png",currentDisposition:"pass",previousResults:[],limits:{maxDimension:20000,maxPixels:40000000},async createOutput(){throw new Error("Unexpected image replacement");},file};
 const context = {signal:new AbortController().signal,requestId:"verification",data:{get(){},set(){}},log(){},organization:{}};
 const runtime = await definition.stages.post_save.createInstance({id:"verification",config,services:{images:{sharp}}});
 let ticks=0;
@@ -55,10 +55,10 @@ const rss=[];
 try {
   for(let i=0;i<12;i++) {
     const start=performance.now();
-    const result=await runtime.execute(input,context);
+    const result=await runtime.process(input,context);
     elapsed.push(Math.round(performance.now()-start));
     rss.push(Math.round(process.memoryUsage().rss/1024**2));
-    assert.equal(result.disposition.value,"pass");
+    assert.equal(result.status,"pass");
     assert.equal(result.details.sampledFrames,1);
   }
   assert.equal(tensorCounts.length,12);
@@ -68,7 +68,7 @@ try {
 } finally { clearInterval(timer); await runtime.dispose(); }
 // A new runtime must load its own usable model after disposal.
 const next=await definition.stages.post_save.createInstance({id:"replacement",config,services:{images:{sharp}}});
-try {assert.equal((await next.execute(input,context)).disposition.value,"pass");} finally {await next.dispose();}
+try {assert.equal((await next.process(input,context)).status,"pass");} finally {await next.dispose();}
 `,
   );
   const child = Bun.spawn(
@@ -143,12 +143,17 @@ try {assert.equal((await next.execute(input,context)).disposition.value,"pass");
         const uploaded = await response.json();
         await host.app.files.sweep();
         const record = await host.app.db.read((r: any) => r.file(uploaded.id));
-        assert.equal(record.status, status);
         const tasks = await host.app.db.read((r: any) => r.tasks(uploaded.id));
-        assert.equal(
-          tasks.find((task: any) => task.kind === "action").status,
-          "success",
-        );
+        if (status === "deleted") {
+          assert.equal(record, null);
+          assert.deepEqual(tasks, []);
+        } else {
+          assert.equal(record.status, status);
+          assert.equal(
+            tasks.find((task: any) => task.kind === "action").status,
+            "success",
+          );
+        }
       }
       console.log(
         "Isolated host installation and pass/block/delete pipelines passed",

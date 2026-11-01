@@ -46,4 +46,4 @@ Prepare Tencent Cloud credentials and a policy ID, add the instance to a post-sa
 
 `Pass` proposes pass, `Review` proposes block, and `Block` follows `blockAction`. Image details retain suggestions, labels, scores and the request ID. See the [post-save pipeline guide (中文)](https://llleixx.github.io/picloom/guide/pipelines.html) for public access timing and cumulative dispositions.
 
-Content exceeding the configured size limit fails moderation without automatic retry; this setting does not change Tencent limits. URL mode requires a public image domain reachable by Tencent. GIF moderation examines sampled frames only.
+Content exceeding the configured size limit fails moderation without automatic retry; this setting does not change Tencent limits. URL mode requires a public image domain reachable by Tencent and reviews the currently published content. Use content mode after steps that replace the image to review the new pipeline content. GIF moderation examines sampled frames only.
