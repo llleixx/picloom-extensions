@@ -30,7 +30,8 @@ test("NodeImage storage: upload, redirect, stream, retryable writes and unsuppor
       uploads++;
       if (lostResponse)
         throw new TypeError("network error containing private details");
-      const image = (init?.body as FormData).get("image") as File;
+      const form = await new Request(address, init).formData();
+      const image = form.get("image") as File;
       expect(image.type).toBe("image/png");
       expect(Buffer.from(await image.arrayBuffer()).equals(png)).toBe(true);
       return Response.json({

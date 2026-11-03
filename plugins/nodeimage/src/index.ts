@@ -1,3 +1,4 @@
+import { withMultipart } from "../../../shared/multipart";
 import manifest from "../plugin.json";
 import { isPluginError } from "@picloom/plugin-sdk";
 import {
@@ -96,11 +97,13 @@ export const nodeImageStorage: Definition<"storage"> = {
       signal: AbortSignal,
     ) {
       const secrets = (await services.readSecrets()).value;
+      const headers = new Headers(init.headers);
+      headers.set("X-API-Key", String(secrets.apiKey));
       return fetch(apiOrigin + path, {
         ...init,
         redirect: "error",
         signal,
-        headers: { "X-API-Key": String(secrets.apiKey) },
+        headers,
       });
     }
     async function info(id: string, signal: AbortSignal) {
@@ -139,68 +142,43 @@ export const nodeImageStorage: Definition<"storage"> = {
       async write({ fileId, storageKey, file }, ctx) {
         ctx.signal.throwIfAborted();
         const signal = signalFor(ctx.signal);
-        // NodeImage accepts multipart, not a user-selected object key.
-        const stream = await file.openRead();
-        const reader = stream.getReader();
-        const chunks: Uint8Array<ArrayBuffer>[] = [];
-        const abort = () => {
-          void reader.cancel().catch(() => {});
-        };
-        signal.addEventListener("abort", abort, { once: true });
-        try {
-          while (true) {
-            signal.throwIfAborted();
-            const { value, done } = await reader.read();
-            signal.throwIfAborted();
-            if (done) break;
-            chunks.push(new Uint8Array(value));
-          }
-        } catch {
-          throw new PluginError(
-            "FAILED",
-            "Could not prepare NodeImage upload",
-            true,
-          );
-        } finally {
-          signal.removeEventListener("abort", abort);
-          await reader.cancel();
-          reader.releaseLock();
-        }
         const extension = storageKey.match(/\.[a-zA-Z0-9]+$/)?.[0] ?? "";
-        const form = new FormData();
-        form.set(
-          "image",
-          new File(chunks, fileId + extension, {
-            type: file.metadata.mimeType ?? "application/octet-stream",
-          }),
-        );
         try {
-          const response = await request(
-            "/api/upload",
-            { method: "POST", body: form },
+          return await withMultipart(
+            file,
+            "image",
+            fileId + extension,
+            {},
             signal,
-          );
-          if (!response.ok) {
-            await response.body?.cancel();
-            throw httpError(response.status);
-          }
-          const data = await response.json();
-          if (
-            data?.success !== true ||
-            typeof data.image_id !== "string" ||
-            !/^[a-zA-Z0-9_-]+$/.test(data.image_id)
-          )
-            throw new PluginError(
-              "INVALID_DATA",
-              "Invalid NodeImage upload result",
-              false,
-            );
-          return {
-            locator: {
-              imageId: data.image_id,
-              url: imageUrl(data.links?.direct),
+            async (body, headers) => {
+              const response = await request(
+                "/api/upload",
+                { method: "POST", body, headers },
+                signal,
+              );
+              if (!response.ok) {
+                await response.body?.cancel();
+                throw httpError(response.status);
+              }
+              const data = await response.json();
+              if (
+                data?.success !== true ||
+                typeof data.image_id !== "string" ||
+                !/^[a-zA-Z0-9_-]+$/.test(data.image_id)
+              )
+                throw new PluginError(
+                  "INVALID_DATA",
+                  "Invalid NodeImage upload result",
+                  false,
+                );
+              return {
+                locator: {
+                  imageId: data.image_id,
+                  url: imageUrl(data.links?.direct),
+                },
+              };
             },
-          };
+          );
         } catch (error) {
           if (isPluginError(error)) throw error;
           // Retrying may create another remote object.

@@ -86,7 +86,7 @@ test("Telegram uploads original bytes as a document and keeps secrets out of the
   mockFetch(async (url, init) => {
     expect(url).toBe(`https://api.telegram.org/bot${botToken}/sendDocument`);
     expect(init?.redirect).toBe("error");
-    const form = init?.body as FormData;
+    const form = await new Request(url, init).formData();
     expect(form.get("chat_id")).toBe("-100123");
     expect(form.get("disable_content_type_detection")).toBe("true");
     expect(form.get("photo")).toBeNull();
@@ -133,12 +133,12 @@ test("Telegram auto and forced stream reads proxy files without a token-bearing 
   expect(downloads).toBe(2);
 });
 
-test("Telegram rejects unknown, excessive and mismatched file sizes before a remote write", async () => {
+test("Telegram rejects invalid size declarations and mismatched upload streams", async () => {
   mockFetch(() => {
     throw new Error("must not contact Telegram");
   });
   const plugin = await runtime();
-  for (const size of [null, 20_000_001, -1, 3, 5]) {
+  for (const size of [null, 20_000_001, -1]) {
     await expect(
       plugin.write(
         {
@@ -150,6 +150,22 @@ test("Telegram rejects unknown, excessive and mismatched file sizes before a rem
     ).rejects.toMatchObject({ code: "RESOURCE_LIMIT" });
   }
   expect(mock).not.toHaveBeenCalled();
+  mock?.mockRestore();
+  mockFetch(async (url, init) => {
+    await new Request(url, init).arrayBuffer();
+    return uploadResult();
+  });
+  for (const size of [3, 5]) {
+    await expect(
+      plugin.write(
+        {
+          ...writeInput,
+          file: { ...file, metadata: { ...file.metadata, byteSize: size } },
+        },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_DATA" });
+  }
 });
 
 test("Telegram retries transient upload failures and rejects malformed success without leaking credentials", async () => {

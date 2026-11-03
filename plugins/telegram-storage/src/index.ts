@@ -1,3 +1,4 @@
+import { withMultipart } from "../../../shared/multipart";
 import manifest from "../plugin.json";
 import { isPluginError } from "@picloom/plugin-sdk";
 import {
@@ -117,12 +118,14 @@ export const telegramStorage: Definition<"storage"> = {
       body: BodyInit,
       signal: AbortSignal,
       credential?: string,
+      headers?: Headers,
     ): Promise<any> {
       const secret = credential ?? (await token());
       try {
         const response = await fetch(`${origin}/bot${secret}/${method}`, {
           method: "POST",
           body,
+          headers,
           redirect: "error",
           signal,
         });
@@ -221,45 +224,20 @@ export const telegramStorage: Definition<"storage"> = {
             false,
           );
         const signal = signalFor(ctx.signal);
-        const reader = (await file.openRead()).getReader();
-        const chunks: Uint8Array<ArrayBuffer>[] = [];
-        let length = 0;
-        const abort = () => {
-          void reader.cancel().catch(() => {});
-        };
-        signal.addEventListener("abort", abort, { once: true });
-        try {
-          while (true) {
-            signal.throwIfAborted();
-            const { value, done } = await reader.read();
-            signal.throwIfAborted();
-            if (done) break;
-            length += value.byteLength;
-            if (length > size || length > maxBytes) throw new Error();
-            chunks.push(new Uint8Array(value));
-          }
-          if (length !== size) throw new Error();
-        } catch {
-          throw new PluginError(
-            "RESOURCE_LIMIT",
-            "Could not prepare Telegram upload with the declared size",
-            false,
-          );
-        } finally {
-          signal.removeEventListener("abort", abort);
-          await reader.cancel().catch(() => {});
-          reader.releaseLock();
-        }
         const mimeType = file.metadata.mimeType ?? "application/octet-stream";
         const extension = storageKey.match(/\.[a-zA-Z0-9]+$/)?.[0] ?? "";
-        const form = new FormData();
-        form.set("chat_id", String(config.chatId));
-        form.set("disable_content_type_detection", "true");
-        form.set(
+        const result = await withMultipart(
+          file,
           "document",
-          new File(chunks, fileId + extension, { type: mimeType }),
+          fileId + extension,
+          {
+            chat_id: String(config.chatId),
+            disable_content_type_detection: "true",
+          },
+          signal,
+          (body, headers) =>
+            api("sendDocument", body, signal, undefined, headers),
         );
-        const result = await api("sendDocument", form, signal);
         if (
           !Number.isSafeInteger(result.message_id) ||
           result.message_id <= 0 ||
