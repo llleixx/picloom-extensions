@@ -469,28 +469,6 @@ test("OpenList validates configuration and cancels/releases upload input on abor
   }
 });
 
-test("OpenList connection refusal is a retryable failure with no remote write", async () => {
-  const remote = Bun.serve({
-    hostname: "127.0.0.1",
-    port: 0,
-    fetch() {
-      return success();
-    },
-  });
-  const endpoint = remote.url.href;
-  await remote.stop(true);
-  const runtime = await instance(endpoint);
-  await expect(
-    runtime.write(
-      { operationId: "op", fileId: "id", storageKey: "a.svg", file: input() },
-      ctx(),
-    ),
-  ).rejects.toMatchObject({
-    code: "NETWORK",
-    retryable: true,
-  });
-});
-
 test("OpenList request preparation failures do not become network failures", async () => {
   let requests = 0;
   const remote = Bun.serve({

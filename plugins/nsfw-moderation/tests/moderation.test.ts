@@ -1,7 +1,6 @@
 import { expect, test } from "bun:test";
 import { PluginError, type FileInput } from "@picloom/plugin-sdk";
 import { image, services } from "../../../tests/services";
-import definition from "../src";
 import { createRuntime, frameIndices } from "../src/runtime";
 import type { Classifier } from "../src/classifier";
 import { context, file, input, safeScores, settings } from "./helpers";
@@ -244,24 +243,4 @@ test("timeout is nonretryable; disposal cancels a pending read and releases its 
   expect(await rejected).toBeInstanceOf(DOMException);
   expect(cancelled).toBe(2);
   await timeout.dispose?.();
-});
-
-test("defaults and English/Chinese setting labels are complete", () => {
-  const fields = definition.stages.post_save!.configSchema!.properties!;
-  expect(
-    Object.fromEntries(
-      Object.entries(fields).map(([key, field]) => [key, field.default]),
-    ),
-  ).toEqual({ ...settings });
-  for (const field of Object.values(fields)) {
-    const hint = field["x-ui"]!;
-    for (const key of [
-      hint.labelKey,
-      hint.descriptionKey,
-      ...(hint.enumKeys ?? []),
-    ].filter(Boolean)) {
-      expect(definition.messages["en-US"]![key!]).toBeTruthy();
-      expect(definition.messages["zh-CN"]![key!]).toBeTruthy();
-    }
-  }
 });

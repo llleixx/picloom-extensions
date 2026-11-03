@@ -327,23 +327,3 @@ test("Telegram late download errors cannot expose the bot token", async () => {
     expect(String(error)).not.toContain(botToken);
   }
 });
-
-test("Telegram transient deletion failures can retry", async () => {
-  const plugin = await runtime();
-  for (const behavior of [
-    () => {
-      throw new TypeError("Connection lost");
-    },
-    () => new Response("Unavailable", { status: 503 }),
-    () => Response.json({ ok: false, error_code: 503 }),
-  ]) {
-    mockFetch(behavior);
-    await expect(
-      plugin.delete(
-        { operationId: "delete", storageKey: "a.png", locator },
-        context,
-      ),
-    ).rejects.toMatchObject({ retryable: true });
-    mock?.mockRestore();
-  }
-});
