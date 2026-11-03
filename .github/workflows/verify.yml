@@ -1,10 +1,20 @@
 name: Verify
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
   workflow_call:
+    inputs:
+      release:
+        description: Preserve verification for a release caller
+        type: boolean
+        default: false
 permissions:
   contents: read
+concurrency:
+  group: extensions-${{ inputs.release && 'release' || 'verify' }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !inputs.release }}
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -21,3 +31,13 @@ jobs:
         with:
           name: extensions
           path: dist/
+  result:
+    name: Verify result
+    if: ${{ always() }}
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful verification
+        env:
+          VERIFY_RESULT: ${{ needs.verify.result }}
+        run: test "$VERIFY_RESULT" = success

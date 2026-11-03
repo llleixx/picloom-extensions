@@ -76,7 +76,6 @@ await gh(
   "release",
   "create",
   tag,
-  "--draft",
   "--target",
   commit,
   "--title",
@@ -87,4 +86,4 @@ await gh(
   "dist/SHA256SUMS",
   "dist/packages.json",
 );
-console.log("Draft Release prepared");
+console.log("Release published");
